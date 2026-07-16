@@ -354,8 +354,8 @@ textarea.setting-prompt:focus { border-color: var(--border-focus); }
       <div class="setting-group">
         <label>上下文窗口大小</label>
         <div class="setting-row">
-          <input type="range" id="ctx-slider" min="8000" max="128000" value="48000" step="2000" style="flex:1">
-          <input type="number" id="ctx-number" value="48000" min="8000" max="128000" step="2000">
+          <input type="range" id="ctx-slider" min="8000" max="48000" value="48000" step="2000" style="flex:1">
+          <input type="number" id="ctx-number" value="48000" min="8000" max="48000" step="2000">
         </div>
         <span class="hint">当前：<span id="ctx-current">48000</span> tokens · Ollama 默认值：<span id="ctx-ollama-default">32768</span>（num_ctx 可覆盖）</span>
         <span class="hint">建议 48K–64K，M3 16GB 内存建议不超过 64K</span>
@@ -1338,15 +1338,20 @@ function checkContextAndHandle() {
     updateWarningBar();
   }
 
-  if (pct >= 0.80 && autoSlideWindow && conversationTokens > 0) {
-    const result = applySlidingWindow(conversationHistory);
-    if (result.dropped > 0) {
-      conversationHistory = result.history;
-      addSystemMessage('📝 已自动移除 ' + result.dropped + ' 轮较早对话，保留最近讨论');
-      conversationTokens = Math.max(0, conversationTokens - Math.floor(conversationTokens * 0.3)); // rough estimate
-      updateContextBar();
-      updateWarningBar();
-      saveConversation();
+  if (pct >= 0.80 && conversationTokens > 0) {
+    if (askOn80) {
+      // 弹窗询问用户：滑动窗口 or 重置
+      showContextFullDialog();
+    } else if (autoSlideWindow) {
+      const result = applySlidingWindow(conversationHistory);
+      if (result.dropped > 0) {
+        conversationHistory = result.history;
+        addSystemMessage('📝 已自动移除 ' + result.dropped + ' 轮较早对话，保留最近讨论');
+        conversationTokens = Math.max(0, conversationTokens - Math.floor(conversationTokens * 0.3));
+        updateContextBar();
+        updateWarningBar();
+        saveConversation();
+      }
     }
   }
 
@@ -1356,14 +1361,15 @@ function checkContextAndHandle() {
 function applySlidingWindow(history) {
   const userMessages = history.filter(m => m.role === 'user');
   const rounds = userMessages.length;
+  const maxRounds = slideRounds || DEFAULT_SLIDE_ROUNDS;
 
-  if (rounds <= MAX_CONVERSATION_ROUNDS) {
+  if (rounds <= maxRounds) {
     return { history, dropped: 0 };
   }
 
   const cutoffIndex = history.findIndex(
     (m, i) => m.role === 'user' &&
-    history.slice(0, i + 1).filter(x => x.role === 'user').length > rounds - MAX_CONVERSATION_ROUNDS
+    history.slice(0, i + 1).filter(x => x.role === 'user').length > rounds - maxRounds
   );
 
   if (cutoffIndex <= 0) return { history, dropped: 0 };
@@ -1702,7 +1708,7 @@ function setupSettingsPanel() {
 
   number.addEventListener('input', () => {
     let val = parseInt(number.value) || DEFAULT_CONTEXT_LIMIT;
-    val = clamp(val, 8000, 128000);
+    val = clamp(val, 8000, 48000);
     slider.value = val;
     number.value = val;
     current.textContent = val;
