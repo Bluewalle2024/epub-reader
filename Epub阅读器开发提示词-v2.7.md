@@ -2,6 +2,15 @@
 
 > 更新：2026-07-16
 >
+> v2.7.3 变更（响应式布局修复 — 横向滚动支持）：
+> 1. **`#main` 增加横向滚动**：`overflow: hidden` → `overflow-x: auto`，窗口缩小时可左右滑动
+> 2. **回滚 `flexBasis` 实验**：面板恢复 `width` + `flex-shrink: 0`，避免 flex-grow 冲突导致布局错乱
+> 3. **localStorage NaN 安全校验**：恢复宽度时跳过无效值，防止脏数据破坏布局
+>
+> Git: `cf994bd` → `f253329` → (v2.7.3)
+>
+> ---
+>
 > v2.7.2 变更（消息气泡右上角图标优化 — Gemini 风格）：
 > 1. **Toolbar 移入气泡内部**：复制/保存图标从气泡上方移至右上角 (`top:8px; right:10px`)，不再遮挡
 > 2. **图标缩小**：按钮 30×30→24×24px，SVG 16→13px，更精致
@@ -9,12 +18,16 @@
 > 4. **毛玻璃背景**：toolbar 背景 `rgba(255,255,255,0.82)` + `blur(10px)`，轻量阴影
 > 5. **修复流式更新图标丢失**：`updateMessageContent` innerHTML 后恢复 toolbar，AI 回复栏图标不再消失
 >
+> Git: `f253329`
+>
+> ---
+>
 > v2.7.1 变更（代码校验修复）：
 > 1. **跨浏览器 dots 动画**：CSS `@keyframes dots` + `content` 仅 Chrome 支持 → 改为 JS `setInterval` 驱动
 > 2. **死变量清理**：移除未使用的 `--warning-yellow` / `--danger-red`
 > 3. **重复调用修复**：`checkContextAndHandle()` 内移除冗余 `updateWarningBar()` 调用
 >
-> Git: `d526dc7` → `62210d7` → `e2e9f10` → `cf994bd` → (v2.7.2)
+> Git: `cf994bd`
 >
 > ---
 >

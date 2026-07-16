@@ -117,7 +117,7 @@ html, body {
 /* ===================================================================== */
 /* 4. Main Layout                                                        */
 /* ===================================================================== */
-#main { display: flex; flex: 1; overflow: hidden; }
+#main { display: flex; flex: 1; overflow-x: auto; overflow-y: hidden; }
 
 /* ---- Sidebar — 白色画廊级导航 ---- */
 #sidebar {
@@ -2168,11 +2168,11 @@ function setupDivider(did, lid, rid) {
   if (!d || !l || !r) return;
   let down, sx, sl, sr;
 
-  // restore saved widths
+  // restore saved widths (skip invalid values from corrupted storage)
   const savedLW = localStorage.getItem('col-width-' + lid);
   const savedRW = localStorage.getItem('col-width-' + rid);
-  if (savedLW) l.style.width = savedLW + 'px';
-  if (savedRW) r.style.width = savedRW + 'px';
+  if (savedLW && !isNaN(parseInt(savedLW))) l.style.width = savedLW + 'px';
+  if (savedRW && !isNaN(parseInt(savedRW))) r.style.width = savedRW + 'px';
 
   d.addEventListener('mousedown', e => {
     e.preventDefault();
