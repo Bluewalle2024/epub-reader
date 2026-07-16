@@ -30,8 +30,6 @@
   --yellow:     #f59e0b;
   --red:        #ef4444;
   --red-bg:     rgba(239, 68, 68, 0.06);
-  --warning-yellow: #f59e0b;
-  --danger-red: #ef4444;
   --shadow-sm:  0 1px 3px rgba(0,0,0,0.04);
   --shadow-md:  0 4px 20px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.03);
   --shadow-lg:  0 8px 40px rgba(0,0,0,0.08);
@@ -454,10 +452,7 @@ body.drag-resizing, body.drag-resizing * {
   background: var(--bg); border-radius: var(--radius-md);
 }
 #thinking-bar.visible { display: block; }
-#thinking-bar .dot-pulse::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
-@keyframes dots {
-  0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } 100% { content: ''; }
-}
+#thinking-bar .dot-pulse { display: inline-block; width: 16px; text-align: left; }
 
 /* ===================================================================== */
 /* 5. Toast                                                              */
@@ -1703,12 +1698,9 @@ async function sendMessage() {
 function checkContextAndHandle() {
   const total = chapterTokens + conversationTokens;
   const pct = contextLimit > 0 ? (total / contextLimit) : 0;
-
   if (pct >= 0.85) {
     warning85Dismissed = false;
-    updateWarningBar();
   }
-
   updateWarningBar();
 }
 
@@ -2041,14 +2033,25 @@ async function confirmMultiSave() {
   }
 }
 
+let _thinkDotsTimer = null;
 function showThinking(text) {
   const bar = $('#thinking-bar');
   $('#thinking-text').textContent = text;
   bar.classList.add('visible');
+  // 跨浏览器 dots 动画（JS 驱动，避免 CSS content 动画兼容问题）
+  const dotEl = bar.querySelector('.dot-pulse');
+  if (dotEl && !_thinkDotsTimer) {
+    let frame = 0;
+    _thinkDotsTimer = setInterval(() => {
+      dotEl.textContent = ['', '.', '..', '...'][frame % 4];
+      frame++;
+    }, 400);
+  }
 }
 
 function hideThinking() {
   $('#thinking-bar').classList.remove('visible');
+  if (_thinkDotsTimer) { clearInterval(_thinkDotsTimer); _thinkDotsTimer = null; }
 }
 
 function showConfirmDialog(msg, onConfirm) {
