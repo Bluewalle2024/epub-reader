@@ -220,24 +220,6 @@ textarea.setting-prompt:focus { border-color: var(--border-focus); }
 .btn-restore { font-family: var(--font); font-size: 12px; font-weight: 500; color: var(--text-secondary); background: none; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; padding: 6px 14px; align-self: flex-start; transition: all 0.15s; }
 .btn-restore:hover { background: var(--bg-sidebar); color: var(--accent); border-color: var(--accent); }
 
-/* ===== Context Full Dialog ===== */
-#context-dialog .modal { width: 440px; }
-#context-dialog .radio-option { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 2px solid var(--border); border-radius: 10px; cursor: pointer; transition: border-color 0.15s; }
-#context-dialog .radio-option:hover { border-color: var(--accent); }
-#context-dialog .radio-option.selected { border-color: var(--accent); background: rgba(232,80,12,0.04); }
-#context-dialog .radio-option input { display: none; }
-#context-dialog .radio-option .radio-dot { width: 18px; height: 18px; border: 2px solid var(--text-tertiary); border-radius: 50%; flex-shrink: 0; margin-top: 1px; transition: all 0.15s; position: relative; }
-#context-dialog .radio-option.selected .radio-dot { border-color: var(--accent); }
-#context-dialog .radio-option.selected .radio-dot::after { content: ''; position: absolute; inset: 3px; background: var(--accent); border-radius: 50%; }
-#context-dialog .radio-option .opt-text strong { display: block; font-size: 13px; margin-bottom: 2px; }
-#context-dialog .radio-option .opt-text span { font-size: 12px; color: var(--text-secondary); }
-#context-dialog .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
-#context-dialog .btn-row button { font-family: var(--font); font-size: 13px; font-weight: 500; padding: 8px 18px; border-radius: 7px; cursor: pointer; transition: all 0.15s; }
-#context-dialog .btn-row .btn-primary { background: var(--accent); color: #fff; border: none; }
-#context-dialog .btn-row .btn-primary:hover { background: var(--accent-hover); }
-#context-dialog .btn-row .btn-secondary { background: none; color: var(--text-secondary); border: 1px solid var(--border); }
-#context-dialog .btn-row .btn-secondary:hover { background: var(--bg-sidebar); }
-
 /* ===== Confirm Dialog ===== */
 #confirm-dialog .modal { width: 380px; }
 #confirm-dialog .confirm-msg { font-size: 14px; color: var(--text-primary); line-height: 1.6; }
@@ -368,22 +350,6 @@ textarea.setting-prompt:focus { border-color: var(--border-focus); }
         </div>
       </div>
       <div class="setting-group">
-        <label>上下文管理策略</label>
-        <div class="setting-row">
-          <span>自动滑动窗口（80% 时移除早期对话）</span>
-          <label class="toggle-sw"><input type="checkbox" id="auto-slide" checked><span class="track"></span></label>
-        </div>
-        <div class="setting-row">
-          <span>80% 时弹窗询问（不自动滑动）</span>
-          <label class="toggle-sw"><input type="checkbox" id="ask-on-80"><span class="track"></span></label>
-        </div>
-        <div class="setting-row">
-          <span>保留最近</span>
-          <input type="number" id="slide-rounds" value="8" min="2" max="20">
-          <span>轮对话</span>
-        </div>
-      </div>
-      <div class="setting-group">
         <label>Obsidian 保存路径</label>
         <input type="text" class="setting-path" id="vault-path" value="Inbox/Epub阅读/" placeholder="相对于 vault 根目录的路径">
       </div>
@@ -392,30 +358,6 @@ textarea.setting-prompt:focus { border-color: var(--border-focus); }
         <textarea class="setting-prompt" id="system-prompt" rows="4" placeholder="你是博学的阅读助手。以下是《{book_name}》中用户选中的章节原文..."></textarea>
       </div>
       <button class="btn-restore" id="btn-restore">恢复默认设置</button>
-    </div>
-  </div>
-</div>
-
-<!-- Context Full Dialog -->
-<div class="modal-overlay" id="context-dialog">
-  <div class="modal">
-    <div class="modal-header"><h3>⚠️ 上下文已接近上限 (95%)</h3></div>
-    <div class="modal-body">
-      <p style="font-size:13px;color:var(--text-secondary)">请选择处理方式：</p>
-      <label class="radio-option selected" id="ctx-opt-slide">
-        <input type="radio" name="ctx-action" value="slide" checked>
-        <span class="radio-dot"></span>
-        <span class="opt-text"><strong>启用自动滑动窗口（推荐）</strong><span>保留最近 8 轮对话 + 早期讨论摘要，释放空间</span></span>
-      </label>
-      <label class="radio-option" id="ctx-opt-reset">
-        <input type="radio" name="ctx-action" value="reset">
-        <span class="radio-dot"></span>
-        <span class="opt-text"><strong>完全重置对话</strong><span>清空所有对话历史，仅保留章节选择</span></span>
-      </label>
-      <div class="btn-row">
-        <button class="btn-secondary" id="ctx-dialog-later">稍后再说</button>
-        <button class="btn-primary" id="ctx-dialog-confirm">确认</button>
-      </div>
     </div>
   </div>
 </div>
@@ -459,9 +401,7 @@ const FONT_MIN = 14, FONT_MAX = 22, FONT_DEFAULT = 16;
 const DEFAULT_CONTEXT_LIMIT = 48000;
 const MAX_HISTORY = 10;
 const CHAPTER_WARN_LIMIT = 40000;
-const DEFAULT_SLIDE_ROUNDS = 8;
 const DEFAULT_VAULT_PATH = 'Inbox/Epub阅读/';
-const MAX_CONVERSATION_ROUNDS = 8;
 const DEFAULT_SYSTEM_PROMPT = '你是博学的阅读助手。以下是《{book_name}》中用户选中的章节原文。优先基于原文内容回答并引用原文。如果问题超出原文范围，可以结合你的知识回答，但要明确区分原文信息和你自己的知识。不知道就说不知道，不要编造信息。';
 
 // ======================================================================
@@ -481,9 +421,6 @@ let currentModel = '';
 let ollamaModels = [];
 let webSearchEnabled = false;
 let saveMode = false;
-let autoSlideWindow = true;
-let askOn80 = false;
-let slideRounds = DEFAULT_SLIDE_ROUNDS;
 let vaultPath = DEFAULT_VAULT_PATH;
 let activeAbortController = null;
 let isStreaming = false;
@@ -731,7 +668,7 @@ function clearHistory() {
 function saveSettings() {
   try {
     localStorage.setItem('epub-reader-settings', JSON.stringify({
-      contextLimit, chineseOnly, autoSlideWindow, askOn80, slideRounds, vaultPath, customSystemPrompt
+      contextLimit, chineseOnly, vaultPath, customSystemPrompt
     }));
   } catch (e) {}
 }
@@ -742,9 +679,6 @@ function loadSettings() {
     if (s) {
       contextLimit = s.contextLimit || DEFAULT_CONTEXT_LIMIT;
       chineseOnly = s.chineseOnly !== undefined ? s.chineseOnly : true;
-      autoSlideWindow = s.autoSlideWindow !== undefined ? s.autoSlideWindow : true;
-      askOn80 = s.askOn80 || false;
-      slideRounds = s.slideRounds || DEFAULT_SLIDE_ROUNDS;
       vaultPath = s.vaultPath || DEFAULT_VAULT_PATH;
       customSystemPrompt = s.customSystemPrompt || '';
     }
@@ -756,11 +690,6 @@ function applySettingsToForm() {
   $('#ctx-number').value = contextLimit;
   $('#ctx-current').textContent = contextLimit;
   $('#chinese-only').checked = chineseOnly;
-  $('#auto-slide').checked = autoSlideWindow;
-  $('#ask-on-80').checked = askOn80;
-  $('#ask-on-80').disabled = autoSlideWindow;
-  $('#auto-slide').disabled = askOn80;
-  $('#slide-rounds').value = slideRounds;
   $('#vault-path').value = vaultPath;
   $('#system-prompt').value = customSystemPrompt;
 }
@@ -1331,64 +1260,12 @@ function checkContextAndHandle() {
   const total = chapterTokens + conversationTokens;
   const pct = contextLimit > 0 ? (total / contextLimit) : 0;
 
-  if (pct >= 0.95) {
-    showContextFullDialog();
-  } else if (pct >= 0.85) {
+  if (pct >= 0.85) {
     warning85Dismissed = false;
     updateWarningBar();
   }
 
-  if (pct >= 0.80 && conversationTokens > 0) {
-    if (askOn80) {
-      // 弹窗询问用户：滑动窗口 or 重置
-      showContextFullDialog();
-    } else if (autoSlideWindow) {
-      const result = applySlidingWindow(conversationHistory);
-      if (result.dropped > 0) {
-        conversationHistory = result.history;
-        addSystemMessage('📝 已自动移除 ' + result.dropped + ' 轮较早对话，保留最近讨论');
-        conversationTokens = Math.max(0, conversationTokens - Math.floor(conversationTokens * 0.3));
-        updateContextBar();
-        updateWarningBar();
-        saveConversation();
-      }
-    }
-  }
-
   updateWarningBar();
-}
-
-function applySlidingWindow(history) {
-  const userMessages = history.filter(m => m.role === 'user');
-  const rounds = userMessages.length;
-  const maxRounds = slideRounds || DEFAULT_SLIDE_ROUNDS;
-
-  if (rounds <= maxRounds) {
-    return { history, dropped: 0 };
-  }
-
-  const cutoffIndex = history.findIndex(
-    (m, i) => m.role === 'user' &&
-    history.slice(0, i + 1).filter(x => x.role === 'user').length > rounds - maxRounds
-  );
-
-  if (cutoffIndex <= 0) return { history, dropped: 0 };
-
-  const dropped = history.slice(0, cutoffIndex);
-  const recent = history.slice(cutoffIndex);
-
-  const topicList = dropped
-    .filter(m => m.role === 'user')
-    .map(m => m.content.slice(0, 80))
-    .join('；');
-
-  return {
-    history: [
-      { role: 'system', content: '[早期讨论摘要] 此前讨论了：' + (topicList || '无') },
-      ...recent
-    ],
-    dropped: Math.floor(dropped.filter(m => m.role === 'user').length)
-  };
 }
 
 function resetConversation() {
@@ -1653,18 +1530,6 @@ function hideThinking() {
   $('#thinking-bar').classList.remove('visible');
 }
 
-function showContextFullDialog() {
-  $('#context-dialog').classList.add('open');
-  // reset radio selection
-  document.getElementById('ctx-opt-slide').classList.add('selected');
-  document.getElementById('ctx-opt-reset').classList.remove('selected');
-  document.querySelector('#ctx-opt-slide input').checked = true;
-}
-
-function hideContextFullDialog() {
-  $('#context-dialog').classList.remove('open');
-}
-
 function showConfirmDialog(msg, onConfirm) {
   const dialog = $('#confirm-dialog');
   $('#confirm-msg').textContent = msg;
@@ -1728,37 +1593,6 @@ function setupSettingsPanel() {
     toast(chineseOnly ? '已切换为仅中文' : '已切换为显示全文');
   });
 
-  // auto-slide / ask-on-80 mutual exclusion
-  $('#auto-slide').addEventListener('change', function() {
-    autoSlideWindow = this.checked;
-    if (autoSlideWindow) {
-      askOn80 = false;
-      $('#ask-on-80').checked = false;
-      $('#ask-on-80').disabled = true;
-    } else {
-      $('#ask-on-80').disabled = false;
-    }
-    saveSettings();
-  });
-
-  $('#ask-on-80').addEventListener('change', function() {
-    askOn80 = this.checked;
-    if (askOn80) {
-      autoSlideWindow = false;
-      $('#auto-slide').checked = false;
-      $('#auto-slide').disabled = true;
-    } else {
-      $('#auto-slide').disabled = false;
-    }
-    saveSettings();
-  });
-
-  $('#slide-rounds').addEventListener('change', function() {
-    slideRounds = clamp(parseInt(this.value) || DEFAULT_SLIDE_ROUNDS, 2, 20);
-    this.value = slideRounds;
-    saveSettings();
-  });
-
   $('#vault-path').addEventListener('change', function() {
     vaultPath = this.value || DEFAULT_VAULT_PATH;
     saveSettings();
@@ -1772,9 +1606,6 @@ function setupSettingsPanel() {
   $('#btn-restore').addEventListener('click', () => {
     contextLimit = DEFAULT_CONTEXT_LIMIT;
     chineseOnly = true;
-    autoSlideWindow = true;
-    askOn80 = false;
-    slideRounds = DEFAULT_SLIDE_ROUNDS;
     vaultPath = DEFAULT_VAULT_PATH;
     customSystemPrompt = '';
     applySettingsToForm();
@@ -1985,32 +1816,6 @@ function setupEventListeners() {
   // Settings panel
   setupSettingsPanel();
 
-  // Context dialog
-  document.querySelectorAll('#context-dialog .radio-option').forEach(opt => {
-    opt.addEventListener('click', function() {
-      document.querySelectorAll('#context-dialog .radio-option').forEach(o => o.classList.remove('selected'));
-      this.classList.add('selected');
-      this.querySelector('input').checked = true;
-    });
-  });
-
-  $('#ctx-dialog-later').addEventListener('click', hideContextFullDialog);
-  $('#ctx-dialog-confirm').addEventListener('click', () => {
-    const selected = document.querySelector('#context-dialog input[name="ctx-action"]:checked');
-    if (selected && selected.value === 'slide') {
-      autoSlideWindow = true;
-      askOn80 = false;
-      $('#auto-slide').checked = true;
-      $('#ask-on-80').checked = false;
-      $('#ask-on-80').disabled = true;
-    }
-    hideContextFullDialog();
-    resetConversation();
-  });
-  $('#context-dialog').addEventListener('click', e => {
-    if (e.target === $('#context-dialog')) hideContextFullDialog();
-  });
-
   // Confirm dialog close
   $('#confirm-dialog').addEventListener('click', e => {
     if (e.target === $('#confirm-dialog')) $('#confirm-dialog').classList.remove('open');
@@ -2020,9 +1825,7 @@ function setupEventListeners() {
   document.addEventListener('keydown', e => {
     // Escape: close modals / exit save mode
     if (e.key === 'Escape') {
-      if ($('#context-dialog').classList.contains('open')) {
-        hideContextFullDialog();
-      } else if ($('#confirm-dialog').classList.contains('open')) {
+      if ($('#confirm-dialog').classList.contains('open')) {
         $('#confirm-dialog').classList.remove('open');
       } else if ($('#settings-modal').classList.contains('open')) {
         $('#settings-modal').classList.remove('open');
