@@ -76,6 +76,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg); colo
 .chapter-item .chapter-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chapter-item .chapter-meta { font-size: 10px; color: var(--text-tertiary); flex-shrink: 0; }
 .no-results { font-size: 12px; color: var(--text-tertiary); text-align: center; padding: 16px 0; }
+.search-highlight { background: #fde68a; color: #1d1d1f; padding: 1px 2px; border-radius: 2px; }
 #sidebar-footer { padding: 10px 12px; border-top: 1px solid var(--border); flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
 .summary-bar { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-secondary); transition: color 0.3s; }
 .summary-bar.warning { color: var(--warning-yellow); }
@@ -255,7 +256,14 @@ textarea.setting-prompt:focus { border-color: var(--border-focus); }
           <div class="history-list" id="history-list"></div>
         </div>
         <div class="current-book" id="current-book" style="display:none"></div>
-        <input type="text" class="search-input" id="chapter-search" placeholder="搜索章节...">
+        <div style="position:relative">
+          <input type="text" class="search-input" id="chapter-search" placeholder="搜索章节..." style="padding-right:28px">
+          <button id="search-clear" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);width:20px;height:20px;border:none;background:none;cursor:pointer;color:var(--text-tertiary);font-size:14px;line-height:1;border-radius:50%;padding:0">✕</button>
+        </div>
+        <label class="chapter-item" id="select-all-row" style="display:none">
+          <input type="checkbox" id="select-all-checkbox">
+          <span class="chapter-title">全选</span>
+        </label>
         <div class="chapter-list" id="chapter-list"></div>
       </div>
       <div id="sidebar-footer" style="display:none">
@@ -416,6 +424,7 @@ let customSystemPrompt = '';     // 用户自定义系统提示词，空字符�
 let conversationTokens = 0;
 let conversationHistory = [];    // [{role, content}]
 let contextLimit = DEFAULT_CONTEXT_LIMIT;
+let contextLimitByModel = {};     // 按模型记住上下文设置: { 'ollama:xxx': 48000, 'deepseek:xxx': 128000 }
 let chineseOnly = true;
 let currentModel = '';
 let ollamaModels = [];
@@ -509,26 +518,35 @@ async function apiUploadEpub(file) {
 }
 
 async function apiCountTokens(text, model) {
-  const resp = await fetch(API_BASE + '/api/count-tokens', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, model })
-  });
-  if (!resp.ok) return 0;
-  const data = await resp.json();
-  return data.tokens || 0;
+  try {
+    const resp = await fetch(API_BASE + '/api/count-tokens', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, model }),
+      signal: AbortSignal.timeout(10000)
+    });
+    if (!resp.ok) return 0;
+    const data = await resp.json();
+    return data.tokens || 0;
+  } catch (e) { return 0; }
 }
 
 async function apiCountTokensBatch(texts, model) {
   if (!texts || texts.length === 0) return [];
-  const resp = await fetch(API_BASE + '/api/count-tokens-batch', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ texts, model })
-  });
-  if (!resp.ok) throw new Error('批量 token 计算失败');
-  const data = await resp.json();
-  return data.tokens || [];
+  try {
+    const resp = await fetch(API_BASE + '/api/count-tokens-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texts, model }),
+      signal: AbortSignal.timeout(15000)
+    });
+    if (!resp.ok) throw new Error('批量 token 计算失败');
+    const data = await resp.json();
+    return data.tokens || [];
+  } catch (e) {
+    // fallback: use approximate tokens
+    return texts.map(t => 0);
+  }
 }
 
 async function apiSaveObsidian(bookName, messages) {
@@ -666,9 +684,13 @@ function clearHistory() {
 }
 
 function saveSettings() {
+  // 保存前把当前模型的上下文记录到 map 中
+  if (currentModel) {
+    contextLimitByModel[currentModel] = contextLimit;
+  }
   try {
     localStorage.setItem('epub-reader-settings', JSON.stringify({
-      contextLimit, chineseOnly, vaultPath, customSystemPrompt
+      contextLimit, chineseOnly, vaultPath, customSystemPrompt, contextLimitByModel
     }));
   } catch (e) {}
 }
@@ -681,12 +703,21 @@ function loadSettings() {
       chineseOnly = s.chineseOnly !== undefined ? s.chineseOnly : true;
       vaultPath = s.vaultPath || DEFAULT_VAULT_PATH;
       customSystemPrompt = s.customSystemPrompt || '';
+      contextLimitByModel = s.contextLimitByModel || {};
     }
   } catch (e) {}
+  // 如果保存的上下文超过当前模型上限，自动 clamp
+  const maxCtx = getContextMax();
+  if (contextLimit > maxCtx) {
+    contextLimit = maxCtx;
+  }
 }
 
 function applySettingsToForm() {
+  const maxCtx = getContextMax();
+  $('#ctx-slider').max = maxCtx;
   $('#ctx-slider').value = contextLimit;
+  $('#ctx-number').max = maxCtx;
   $('#ctx-number').value = contextLimit;
   $('#ctx-current').textContent = contextLimit;
   $('#chinese-only').checked = chineseOnly;
@@ -741,19 +772,25 @@ function renderHistoryList() {
 
 function renderChapterList(filterQuery = '') {
   const container = $('#chapter-list');
+  const selectAllRow = $('#select-all-row');
   const q = (filterQuery || '').toLowerCase();
 
   if (chapters.length === 0) {
     container.innerHTML = '';
+    selectAllRow.style.display = 'none';
     return;
   }
 
+  selectAllRow.style.display = 'flex';
+
   let html = '';
   let visible = 0;
+  let visibleSelected = 0;
   chapters.forEach((ch, i) => {
-    const match = !q || ch.title.toLowerCase().includes(q);
+    const match = !q || ch.title.toLowerCase().includes(q) || (ch.text || '').toLowerCase().includes(q) || (ch.text_cn || '').toLowerCase().includes(q);
     if (!match) return;
     visible++;
+    if (selectedChapters.has(i)) visibleSelected++;
     const checked = selectedChapters.has(i);
     const tokens = ch.tokens !== undefined ? ch.tokens : (ch.tokens_approx || 0);
     html += '<label class="chapter-item">' +
@@ -781,6 +818,27 @@ function renderChapterList(filterQuery = '') {
       handleChapterToggle(idx, this.checked);
     });
   });
+
+  // sync select-all checkbox state
+  syncSelectAllCheckbox(visible, visibleSelected);
+}
+
+function syncSelectAllCheckbox(visible, visibleSelected) {
+  const cb = $('#select-all-checkbox');
+  if (!cb) return;
+  if (visible === 0) {
+    cb.checked = false;
+    cb.indeterminate = false;
+  } else if (visibleSelected === 0) {
+    cb.checked = false;
+    cb.indeterminate = false;
+  } else if (visibleSelected >= visible) {
+    cb.checked = true;
+    cb.indeterminate = false;
+  } else {
+    cb.checked = false;
+    cb.indeterminate = true;
+  }
 }
 
 function updateChapterTokenDisplay() {
@@ -833,9 +891,17 @@ function updateCurrentBookIndicator() {
   }
 }
 
+function highlightText(text, query) {
+  if (!query) return text;
+  // escape regex special chars in query
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return text.replace(new RegExp('(' + escaped + ')', 'gi'), '<span class="search-highlight">$1</span>');
+}
+
 function renderReaderArea() {
   const container = $('#reader-content');
   const empty = $('#reader-empty');
+  const query = ($('#chapter-search').value || '').trim();
 
   if (selectedChapters.size === 0) {
     container.innerHTML = '';
@@ -856,11 +922,11 @@ function renderReaderArea() {
   selected.forEach((idx, i) => {
     if (i > 0) html += '<div class="reader-chapter-divider">───</div>';
     const ch = chapters[idx];
-    html += '<span class="reader-chapter-title">' + escapeHtml(ch.title) + '</span>';
+    html += '<span class="reader-chapter-title">' + highlightText(escapeHtml(ch.title), query) + '</span>';
     const text = getDisplayText(ch);
     const paragraphs = text.split('\n').filter(p => p.trim());
     paragraphs.forEach(p => {
-      html += '<p>' + escapeHtml(p) + '</p>';
+      html += '<p>' + highlightText(escapeHtml(p), query) + '</p>';
     });
   });
   container.innerHTML = html;
@@ -1028,8 +1094,8 @@ function updateWarningBar() {
 
 function updateSendButtonState() {
   const btn = $('#btn-send');
-  const total = chapterTokens + conversationTokens;
-  const disabled = selectedChapters.size === 0 || (total > contextLimit);
+  // 只在没选章节时禁用按钮；超出上下文时给警告但不阻塞（后端会自动截断）
+  const disabled = selectedChapters.size === 0;
   btn.disabled = disabled;
   // 流式输出时不 disable（让用户可以点击中止），但通过 CSS class 显示停止状态
   if (isStreaming) {
@@ -1106,13 +1172,39 @@ function handleChapterToggle(idx, checked) {
   if (displayedChanged) {
     renderReaderArea();
   }
+
+  // 立即用近似值更新 UI（不等 API），提升响应速度
+  const approxTokens = [...selectedChapters].reduce((sum, i) => sum + (chapters[i].tokens_approx || 0), 0);
+  chapterTokens = approxTokens;
+  updateSummaryBar();
+  updateContextBar();
+  updateWarningBar();
+
+  // 然后异步精确计算
   recalcChapterTokensDebounced();
+
+  // sync select-all checkbox state
+  syncSelectAllAfterToggle();
 }
 
 function setsEqual(a, b) {
   if (a.size !== b.size) return false;
   for (const v of a) { if (!b.has(v)) return false; }
   return true;
+}
+
+// 章节勾选变化后同步全选框状态（不重新渲染整个列表）
+function syncSelectAllAfterToggle() {
+  const q = ($('#chapter-search').value || '').toLowerCase();
+  let visible = 0, visibleSelected = 0;
+  chapters.forEach((ch, i) => {
+    const match = !q || ch.title.toLowerCase().includes(q) || (ch.text || '').toLowerCase().includes(q) || (ch.text_cn || '').toLowerCase().includes(q);
+    if (match) {
+      visible++;
+      if (selectedChapters.has(i)) visibleSelected++;
+    }
+  });
+  syncSelectAllCheckbox(visible, visibleSelected);
 }
 
 async function sendMessage() {
@@ -1137,8 +1229,8 @@ async function sendMessage() {
 
   const total = chapterTokens + conversationTokens;
   if (total > contextLimit) {
-    toast('上下文已满，请重置对话或减少章节选择');
-    return;
+    // 警告但不阻塞——后端会自动截断章节内容以适应上下文窗口
+    toast('⚠️ 上下文超出限制，章节内容将被自动截断', 'error', 3000);
   }
 
   // abort previous stream
@@ -1282,8 +1374,50 @@ function resetConversation() {
   });
 }
 
+function getContextMax() {
+  // DeepSeek V4 Flash 支持 128K，不受 48K 限制
+  if (currentModel === 'deepseek:deepseek-v4-flash') return 128000;
+  if (currentModel.startsWith('deepseek:')) return 96000;
+  return 48000;
+}
+
+function updateContextSliderMax() {
+  const maxCtx = getContextMax();
+  const slider = $('#ctx-slider');
+  const number = $('#ctx-number');
+  slider.max = maxCtx;
+  number.max = maxCtx;
+  // clamp：当前上下文不能超过模型上限
+  if (contextLimit > maxCtx) {
+    contextLimit = maxCtx;
+    saveSettings();
+  }
+  // 始终同步滑条显示 + 刷新按钮状态
+  slider.value = contextLimit;
+  number.value = contextLimit;
+  $('#ctx-current').textContent = contextLimit;
+  updateContextBar();
+  updateWarningBar();
+  updateSendButtonState();
+}
+
 async function handleModelChange(newModel) {
   if (currentModel === newModel) return;
+
+  // 中止当前流式输出（防止 Ollama 大上下文挂起阻塞）
+  if (activeAbortController) {
+    activeAbortController.abort();
+    activeAbortController = null;
+  }
+  if (isStreaming) {
+    isStreaming = false;
+    updateSendButtonState();
+  }
+
+  // 保存当前模型的上下文设置
+  if (currentModel) {
+    contextLimitByModel[currentModel] = contextLimit;
+  }
 
   if (newModel.startsWith('deepseek')) {
     if (currentModel.startsWith('ollama:')) prevOllamaModel = currentModel;
@@ -1294,15 +1428,38 @@ async function handleModelChange(newModel) {
   }
 
   currentModel = newModel;
+
+  // 恢复新模型的上下文设置（如果之前保存过），否则使用默认上限
+  if (contextLimitByModel[newModel]) {
+    contextLimit = contextLimitByModel[newModel];
+  } else {
+    contextLimit = getContextMax();
+  }
+
+  // 更新滑条上限（clamp 当前值如果需要）+ 刷新按钮状态
+  updateContextSliderMax();
+
   updateStatusBar();
 
-  // recalculate tokens with new tokenizer
+  // 立即刷新上下文进度条和发送按钮（使用当前 chapterTokens + 新 contextLimit）
+  updateContextBar();
+  updateWarningBar();
+  updateSendButtonState();
+
+  // recalculate tokens with new tokenizer (fire-and-forget, 不阻塞切换)
   if (chapters.length > 0) {
-    await recalcChapterTokens();
+    recalcChapterTokens().catch(() => {});
   }
 }
 
 async function resetBookState() {
+  // 中止当前流式输出
+  if (activeAbortController) {
+    activeAbortController.abort();
+    activeAbortController = null;
+  }
+  isStreaming = false;
+
   bookName = '';
   chapters = [];
   repairLevel = 0;
@@ -1573,7 +1730,8 @@ function setupSettingsPanel() {
 
   number.addEventListener('input', () => {
     let val = parseInt(number.value) || DEFAULT_CONTEXT_LIMIT;
-    val = clamp(val, 8000, 48000);
+    const maxCtx = getContextMax();
+    val = clamp(val, 8000, maxCtx);
     slider.value = val;
     number.value = val;
     current.textContent = val;
@@ -1693,6 +1851,10 @@ async function init() {
     });
     select.appendChild(ollamaGroup);
     currentModel = 'ollama:' + models[0].name;
+    // 恢复该模型的上下文设置
+    if (contextLimitByModel[currentModel]) {
+      contextLimit = contextLimitByModel[currentModel];
+    }
     // update ollama default display
     $('#ctx-ollama-default').textContent = models[0].context_length || 32768;
   } else {
@@ -1707,7 +1869,7 @@ async function init() {
   // DeepSeek options
   const dsGroup = document.createElement('optgroup');
   dsGroup.label = 'DeepSeek (云端)';
-  ['deepseek-v4-flash', 'deepseek-chat'].forEach(name => {
+  ['deepseek-v4-flash'].forEach(name => {
     const opt = document.createElement('option');
     opt.value = 'deepseek:' + name;
     opt.textContent = name;
@@ -1771,9 +1933,41 @@ function setupEventListeners() {
   // Chapter search
   const searchDebounced = debounce((query) => {
     renderChapterList(query);
+    // 搜索词高亮：重新渲染阅读区
+    if (selectedChapters.size > 0) renderReaderArea();
   }, 150);
   $('#chapter-search').addEventListener('input', function() {
+    const hasText = this.value.trim().length > 0;
+    $('#search-clear').style.display = hasText ? 'block' : 'none';
     searchDebounced(this.value);
+  });
+
+  // Clear search button
+  $('#search-clear').addEventListener('click', () => {
+    $('#chapter-search').value = '';
+    $('#search-clear').style.display = 'none';
+    renderChapterList('');
+    if (selectedChapters.size > 0) renderReaderArea();
+  });
+
+  // Select all checkbox
+  $('#select-all-checkbox').addEventListener('change', function() {
+    const q = ($('#chapter-search').value || '').toLowerCase();
+    if (this.checked) {
+      chapters.forEach((ch, i) => {
+        if (!q || ch.title.toLowerCase().includes(q) || (ch.text || '').toLowerCase().includes(q) || (ch.text_cn || '').toLowerCase().includes(q)) {
+          selectedChapters.add(i);
+        }
+      });
+    } else {
+      chapters.forEach((ch, i) => {
+        if (!q || ch.title.toLowerCase().includes(q) || (ch.text || '').toLowerCase().includes(q) || (ch.text_cn || '').toLowerCase().includes(q)) {
+          selectedChapters.delete(i);
+        }
+      });
+    }
+    renderChapterList(q);
+    recalcChapterTokensDebounced(100);
   });
 
   // Send button
