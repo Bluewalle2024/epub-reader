@@ -1505,23 +1505,7 @@ function applyBookData(data) {
   bookName = data.name || '';
   chapters = data.chapters || [];
   repairLevel = data.repair_level || 0;
-  selectedChapters = new Set();
-
-  // 自动选中前 2 个有实质内容的章节（跳过 < 200 字的扉页/版权页）
-  let autoSelectCount = 0;
-  for (let i = 0; i < chapters.length && autoSelectCount < 2; i++) {
-    const text = getDisplayText(chapters[i]);
-    if (text.length >= 200) {
-      selectedChapters.add(i);
-      autoSelectCount++;
-    }
-  }
-  // 如果所有章节都太短，至少选前 2 个
-  if (selectedChapters.size === 0) {
-    for (let i = 0; i < Math.min(2, chapters.length); i++) {
-      selectedChapters.add(i);
-    }
-  }
+  selectedChapters = new Set();  // 默认不选，用户手动勾选
 
   chapterTokens = 0;
   conversationTokens = 0;
