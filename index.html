@@ -1447,7 +1447,7 @@ async function resetBookState() {
 }
 
 async function loadFromHistory(name) {
-  // Try to load from backend cache
+  // Try to load from backend cache (内存 → 磁盘缓存 → 本地 EPUB 重解析)
   try {
     const resp = await fetch(API_BASE + '/api/load-epub', {
       method: 'POST',
@@ -1457,12 +1457,12 @@ async function loadFromHistory(name) {
     if (resp.ok) {
       const data = await resp.json();
       applyBookData(data);
-      toast('已从缓存加载《' + name + '》');
       return;
     }
   } catch (e) {}
 
-  toast('需要重新上传 EPUB 文件', 'error');
+  // 所有恢复方式都失败，需要重新上传
+  toast('《' + name + '》需要重新上传 EPUB 文件', 'error');
 }
 
 async function handleFileSelected(file) {

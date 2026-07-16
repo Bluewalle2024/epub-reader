@@ -80,7 +80,8 @@ class SaveRequest(BaseModel):
 # ======================================================================
 # 缓存存储（服务重启后可从磁盘恢复，内存中加速访问）
 # ======================================================================
-_loaded_books: dict[str, dict] = {}  # name → parsed result
+_loaded_books: dict[str, dict] = {}  # name → parsed result (LRU, max 3)
+_loaded_books_order: list[str] = []  # LRU 访问顺序，最近使用的在末尾
 
 # ======================================================================
 # 区域 2: 纯函数（无副作用，不依赖全局状态）
@@ -699,19 +700,36 @@ async def parse_epub(file_data: bytes, filename: str = "") -> dict:
     loop = asyncio.get_running_loop()
     result = await loop.run_in_executor(None, _parse_epub_sync, file_data, filename)
 
-    # 缓存到临时文件（服务重启后可恢复）
+    # 缓存到持久化目录 ~/.epub-reader/cache/（服务重启/系统重启后仍可恢复）
     # 注意：必须用 hashlib 而非 hash()——后者受 PYTHONHASHSEED 影响，进程重启后值不同
     try:
         cache_key = hashlib.md5(result['name'].encode()).hexdigest()
-        cache_path = Path(tempfile.gettempdir()) / f"epub_reader_{cache_key}.cache"
+        cache_dir = Path.home() / ".epub-reader" / "cache"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        cache_path = cache_dir / f"{cache_key}.cache"
         cache_path.write_bytes(pickle.dumps(result))
     except Exception:
         pass  # 缓存失败不影响主流程
 
-    # 内存缓存
-    _loaded_books[result['name']] = result
+    # 内存缓存（LRU，最多 3 本）
+    _add_to_memory_cache(result['name'], result)
 
     return result
+
+
+def _add_to_memory_cache(name: str, data: dict):
+    """将书籍加入内存缓存，LRU 淘汰超出 3 本的最久未用书籍。"""
+    if name in _loaded_books_order:
+        _loaded_books_order.remove(name)
+    _loaded_books_order.append(name)
+    _loaded_books[name] = data
+
+    # 淘汰最久未用的（超出 3 本）
+    while len(_loaded_books_order) > 3:
+        old_name = _loaded_books_order.pop(0)
+        if old_name in _loaded_books:
+            del _loaded_books[old_name]
+            logging.info(f"LRU 淘汰内存缓存: {old_name}")
 
 
 def load_cached_epub(book_name: str) -> dict | None:
@@ -720,17 +738,48 @@ def load_cached_epub(book_name: str) -> dict | None:
     if book_name in _loaded_books:
         return _loaded_books[book_name]
 
-    # 再检查磁盘缓存
+    # 再检查磁盘缓存（~/.epub-reader/cache/）
     cache_key = hashlib.md5(book_name.encode()).hexdigest()
-    cache_path = Path(tempfile.gettempdir()) / f"epub_reader_{cache_key}.cache"
+    cache_dir = Path.home() / ".epub-reader" / "cache"
+    cache_path = cache_dir / f"{cache_key}.cache"
     if cache_path.exists():
         try:
             data = pickle.loads(cache_path.read_bytes())
-            _loaded_books[book_name] = data
+            _add_to_memory_cache(book_name, data)
             return data
         except Exception:
             cache_path.unlink(missing_ok=True)
     return None
+
+
+def _save_raw_epub(file_data: bytes, book_name: str):
+    """保存原始 EPUB 文件到 ~/.epub-reader/books/，供后续自动重解析。"""
+    try:
+        books_dir = Path.home() / ".epub-reader" / "books"
+        books_dir.mkdir(parents=True, exist_ok=True)
+        safe_name = sanitize_filename(book_name)
+        epub_path = books_dir / f"{safe_name}.epub"
+        epub_path.write_bytes(file_data)
+        logging.info(f"原始 EPUB 已保存: {epub_path}")
+    except Exception as e:
+        logging.warning(f"保存原始 EPUB 失败: {e}")
+
+
+async def _reparse_from_saved_epub(book_name: str) -> dict | None:
+    """从本地保存的原始 EPUB 文件重新解析。"""
+    books_dir = Path.home() / ".epub-reader" / "books"
+    safe_name = sanitize_filename(book_name)
+    epub_path = books_dir / f"{safe_name}.epub"
+    if not epub_path.exists():
+        return None
+    try:
+        file_data = epub_path.read_bytes()
+        result = await parse_epub(file_data, f"{book_name}.epub")
+        logging.info(f"从本地 EPUB 重新解析成功: {book_name}")
+        return result
+    except Exception as e:
+        logging.warning(f"从本地 EPUB 重新解析失败: {e}")
+        return None
 
 
 # ── 2.8 安全文件名 ──
@@ -949,48 +998,60 @@ async def count_tokens_batch(request: CountTokensBatchRequest):
 
 
 @app.post("/api/load-epub")
-async def load_epub(request: LoadEpubRequest = LoadEpubRequest(), file: UploadFile = File(None)):
+async def load_epub(request: Request, file: UploadFile = File(None)):
     """
     上传 EPUB → 章节列表 + 书名。
     支持两种模式：
     1. 上传文件: multipart/form-data with file
     2. 从缓存加载: JSON body with book_name + from_cache=true
     """
-    # 从缓存加载
-    if request.from_cache and request.book_name:
-        cached = load_cached_epub(request.book_name)
+    # 判断请求类型：有 file 是上传，否则尝试解析 JSON body
+    if file and file.filename:
+        # ── 模式 1: 上传文件 ──
+        if not file.filename.lower().endswith('.epub'):
+            raise HTTPException(status_code=400, detail="文件格式不支持，请上传 .epub 文件")
+
+        file_data = await file.read()
+        if len(file_data) > MAX_UPLOAD_SIZE:
+            raise HTTPException(status_code=413, detail="文件过大，请上传小于 100MB 的 EPUB")
+
+        try:
+            result = await parse_epub(file_data, file.filename)
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=422, detail=str(e))
+
+        # 保存原始 EPUB 到本地，供后续重解析（无需用户重新上传）
+        _save_raw_epub(file_data, result['name'])
+
+        # 检查字符总数
+        total_chars = sum(len(ch.get('text', '')) for ch in result.get('chapters', []))
+        if total_chars < 500:
+            logging.warning(f"文本内容极少（{total_chars} 字符），可能为图片型 EPUB")
+
+        return result
+
+    # ── 模式 2: 从缓存加载 ──
+    try:
+        body = await request.json()
+        book_name = body.get('book_name', '')
+        from_cache = body.get('from_cache', False)
+    except Exception:
+        book_name = ''
+        from_cache = False
+
+    if from_cache and book_name:
+        cached = load_cached_epub(book_name)
         if cached:
             return cached
+        # 缓存未命中：尝试从本地保存的原始 EPUB 重新解析
+        result = await _reparse_from_saved_epub(book_name)
+        if result:
+            return result
         raise HTTPException(status_code=404, detail="缓存中未找到该书，请重新上传 EPUB")
 
-    # 上传文件
-    if not file:
-        raise HTTPException(status_code=400, detail="请上传 EPUB 文件")
-
-    if not file.filename.lower().endswith('.epub'):
-        raise HTTPException(status_code=400, detail="文件格式不支持，请上传 .epub 文件")
-
-    try:
-        file_data = await file.read()
-    except Exception:
-        raise HTTPException(status_code=400, detail="无法读取文件")
-
-    if len(file_data) > MAX_UPLOAD_SIZE:
-        raise HTTPException(status_code=413, detail="文件过大，请上传小于 100MB 的 EPUB")
-
-    try:
-        result = await parse_epub(file_data, file.filename)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=422, detail=str(e))
-
-    # 检查字符总数
-    total_chars = sum(len(ch.get('text', '')) for ch in result.get('chapters', []))
-    if total_chars < 500:
-        logging.warning(f"文本内容极少（{total_chars} 字符），可能为图片型 EPUB")
-
-    return result
+    raise HTTPException(status_code=400, detail="请上传 EPUB 文件")
 
 
 @app.post("/api/chat")
