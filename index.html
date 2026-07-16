@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPUB 阅读器</title>
+<style>
+/* ===== CSS Variables & Reset ===== */
+:root {
+  --bg: #faf8f2; --bg-sidebar: #f3efe7; --bg-card: #ffffff;
+  --accent: #e8500c; --accent-hover: #c4450a;
+  --text-primary: #1d1d1f; --text-secondary: #6e6e73; --text-tertiary: #aeaeb2;
+  --border: #e5e0d8; --border-focus: #e8500c;
+  --msg-user-bg: #e8500c; --msg-user-text: #ffffff;
+  --msg-ai-bg: #ffffff; --msg-ai-border: #e5e0d8;
+  --warning-yellow: #f59e0b; --danger-red: #ef4444;
+  --content-font-size: 16px;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--text-primary); overflow: hidden; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1cdc4; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #b0aca3; }
+
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ===== Header ===== */
+#header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--bg-card); border-bottom: 1px solid var(--border); flex-shrink: 0; gap: 12px; }
+#header-left { font-size: 15px; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+#header-right { display: flex; align-items: center; gap: 6px; }
+#model-select {
+  font-family: var(--font); font-size: 12px; padding: 4px 28px 4px 10px;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--bg);
+  color: var(--text-primary); cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center;
+}
+#model-select:focus { outline: none; border-color: var(--border-focus); }
+.btn-header { font-family: var(--font); font-size: 12px; font-weight: 500; color: var(--text-secondary); background: none; border: none; border-radius: 5px; cursor: pointer; padding: 4px 10px; transition: all 0.15s; white-space: nowrap; }
+.btn-header:hover { background: var(--bg-sidebar); color: var(--text-primary); }
+
+/* ===== Main Layout ===== */
+#main { display: flex; flex: 1; overflow: hidden; }
+
+/* ===== Sidebar ===== */
+#sidebar { width: 260px; min-width: 180px; background: var(--bg-sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+#sidebar-content { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.btn-upload { display: inline-flex; align-items: center; font-family: var(--font); font-size: 14px; font-weight: 500; color: var(--accent); background: none; border: none; cursor: pointer; padding: 6px 0; transition: color 0.15s; }
+.btn-upload:hover { color: var(--accent-hover); }
+.btn-upload:disabled { color: var(--text-tertiary); cursor: not-allowed; }
+.section-title { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; }
+.section-title .clear-link { font-size: 11px; font-weight: 400; color: var(--text-tertiary); cursor: pointer; }
+.section-title .clear-link:hover { color: var(--accent); }
+.history-list { display: flex; flex-direction: column; gap: 2px; }
+.history-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text-primary); transition: background 0.15s; }
+.history-item:hover { background: rgba(0,0,0,0.04); }
+.history-item.active { background: rgba(232,80,12,0.08); }
+.history-item .book-info { flex: 1; min-width: 0; }
+.history-item .book-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.history-item .book-meta { font-size: 11px; color: var(--text-tertiary); }
+.history-item .btn-delete { width: 20px; height: 20px; border: none; background: none; border-radius: 4px; cursor: pointer; font-size: 12px; color: var(--text-tertiary); display: flex; align-items: center; justify-content: center; opacity: 0; transition: all 0.15s; }
+.history-item:hover .btn-delete { opacity: 1; }
+.history-item .btn-delete:hover { color: var(--danger-red); background: rgba(239,68,68,0.08); }
+.current-book { font-size: 12px; color: var(--accent); font-weight: 500; padding: 4px 0; border-top: 1px solid var(--border); padding-top: 10px; }
+.search-input { width: 100%; padding: 6px 10px; font-family: var(--font); font-size: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-card); color: var(--text-primary); outline: none; transition: border-color 0.15s; }
+.search-input:focus { border-color: var(--border-focus); }
+.search-input::placeholder { color: var(--text-tertiary); }
+.chapter-list { display: flex; flex-direction: column; gap: 1px; flex: 1; overflow-y: auto; min-height: 120px; }
+.chapter-item { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 5px; cursor: pointer; font-size: 13px; transition: background 0.1s; }
+.chapter-item:hover { background: rgba(0,0,0,0.03); }
+.chapter-item input[type="checkbox"] { appearance: none; width: 16px; height: 16px; border: 1.5px solid var(--text-tertiary); border-radius: 4px; cursor: pointer; flex-shrink: 0; position: relative; transition: all 0.15s; }
+.chapter-item input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
+.chapter-item input[type="checkbox"]:checked::after { content: ''; position: absolute; left: 4px; top: 1.5px; width: 5px; height: 9px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.chapter-item .chapter-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chapter-item .chapter-meta { font-size: 10px; color: var(--text-tertiary); flex-shrink: 0; }
+.no-results { font-size: 12px; color: var(--text-tertiary); text-align: center; padding: 16px 0; }
+#sidebar-footer { padding: 10px 12px; border-top: 1px solid var(--border); flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
+.summary-bar { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-secondary); transition: color 0.3s; }
+.summary-bar.warning { color: var(--warning-yellow); }
+.summary-bar.danger { color: var(--danger-red); }
+.summary-bar .warn-icon { font-size: 14px; font-weight: 700; }
+.btn-save { font-family: var(--font); font-size: 13px; font-weight: 500; color: var(--accent); background: none; border: none; cursor: pointer; align-self: flex-start; padding: 4px 0; transition: color 0.15s; }
+.btn-save:hover { color: var(--accent-hover); }
+
+/* ===== Column Dividers ===== */
+.divider { width: 4px; background: transparent; cursor: col-resize; flex-shrink: 0; transition: background 0.15s; position: relative; }
+.divider:hover, .divider.dragging { background: var(--accent); }
+.divider::after { content: ''; position: absolute; inset: 0 -4px; }
+
+/* ===== Reader ===== */
+#reader { width: 400px; min-width: 250px; flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+#reader-header { display: flex; align-items: center; justify-content: flex-end; padding: 8px 16px; gap: 4px; flex-shrink: 0; }
+.font-control { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.font-btn { font-family: var(--font); font-size: 11px; font-weight: 500; color: var(--text-secondary); background: var(--bg-card); border: none; cursor: pointer; padding: 4px 10px; transition: all 0.15s; white-space: nowrap; }
+.font-btn:first-child { border-right: 1px solid var(--border); }
+.font-btn:hover { background: var(--bg-sidebar); color: var(--accent); }
+#reader-content, .msg-bubble, #chat-input-area textarea { font-size: var(--content-font-size); }
+#reader-content { flex: 1; overflow-y: auto; padding: 20px 28px 40px; line-height: 1.8; }
+.reader-chapter-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: inline-block; }
+.reader-chapter-divider { text-align: center; color: var(--text-tertiary); margin: 28px 0; font-size: 13px; letter-spacing: 4px; }
+
+/* ===== Empty States ===== */
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-tertiary); gap: 10px; }
+.empty-state .empty-icon { font-size: 40px; opacity: 0.4; }
+.empty-state .empty-text { font-size: 14px; }
+
+/* ===== Chat ===== */
+#chat { flex: 1; min-width: 300px; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); border-left: 1px solid var(--border); }
+#chat-status { padding: 8px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; }
+#chat-status-top { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
+#chat-status-top .book-model { font-weight: 500; color: var(--text-primary); }
+.progress-bar-wrap { display: flex; align-items: center; gap: 8px; }
+.progress-bar { flex: 1; height: 5px; background: #e8e5de; border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.3s, background 0.3s; width: 0%; }
+.progress-fill.green { background: #34c759; } .progress-fill.yellow { background: #f59e0b; } .progress-fill.red { background: #ef4444; } .progress-fill.black { background: #1d1d1f; }
+.progress-pct { font-size: 11px; color: var(--text-tertiary); font-weight: 500; min-width: 36px; text-align: right; }
+.btn-reset { font-family: var(--font); font-size: 11px; color: var(--text-tertiary); background: none; border: none; cursor: pointer; padding: 2px 4px; white-space: nowrap; display: none; }
+.btn-reset:hover { color: var(--accent); }
+.btn-reset.visible { display: inline; }
+.warning-bar { font-size: 11px; color: var(--warning-yellow); padding: 4px 8px; background: rgba(245,158,11,0.08); border-radius: 5px; display: flex; align-items: center; justify-content: space-between; }
+.warning-bar .close-warn { cursor: pointer; font-size: 14px; color: var(--text-tertiary); background: none; border: none; line-height: 1; }
+
+/* ===== Messages ===== */
+#chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+#chat-messages .empty-state { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); height: auto; }
+.msg-system { text-align: center; font-size: 12px; color: var(--text-tertiary); padding: 4px 0; }
+.msg-row { display: flex; flex-direction: column; max-width: 80%; position: relative; animation: msgFadeIn 0.2s ease-out; }
+@keyframes msgFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.msg-row.user { align-self: flex-end; }
+.msg-row.assistant { align-self: flex-start; }
+.msg-bubble { padding: 10px 14px; border-radius: 14px; line-height: 1.6; position: relative; word-wrap: break-word; }
+.msg-row.user .msg-bubble { background: var(--msg-user-bg); color: var(--msg-user-text); border-bottom-right-radius: 4px; }
+.msg-row.assistant .msg-bubble { background: var(--msg-ai-bg); border: 1px solid var(--msg-ai-border); border-bottom-left-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.msg-bubble p { margin: 0 0 6px; } .msg-bubble p:last-child { margin-bottom: 0; }
+.msg-bubble strong { font-weight: 600; } .msg-bubble em { font-style: italic; }
+.msg-bubble ul, .msg-bubble ol { margin: 6px 0; padding-left: 18px; }
+.msg-bubble code { background: rgba(0,0,0,0.06); padding: 1px 4px; border-radius: 3px; font-size: 0.9em; }
+.msg-bubble pre { background: #f5f5f5; padding: 10px 12px; border-radius: 8px; overflow-x: auto; font-size: 12px; margin: 6px 0; }
+.msg-bubble blockquote { border-left: 3px solid var(--accent); padding-left: 10px; margin: 6px 0; color: var(--text-secondary); }
+.msg-row.streaming .msg-bubble::after { content: '▍'; animation: blink 1s step-end infinite; color: var(--text-tertiary); margin-left: 2px; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ===== Save Mode ===== */
+.msg-sel { display: none; position: absolute; left: -28px; top: 50%; transform: translateY(-50%); cursor: pointer; width: 20px; height: 20px; }
+.msg-sel input { display: none; }
+.msg-sel .cb-box { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 2px solid var(--text-tertiary); border-radius: 5px; transition: all 0.15s; background: var(--bg-card); }
+.msg-sel input:checked + .cb-box { background: var(--accent); border-color: var(--accent); }
+.msg-sel input:checked + .cb-box::after { content: ''; width: 5px; height: 10px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); margin-top: -2px; }
+.msg-sel .cb-box:hover { border-color: var(--accent); }
+.save-mode .msg-sel { display: block; }
+.save-mode .msg-row { margin-left: 28px; }
+
+/* ===== Message Toolbar ===== */
+.msg-toolbar { position: absolute; top: -34px; right: 0; display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 3px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+.msg-row:hover .msg-toolbar { opacity: 1; }
+.toolbar-btn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: none; background: none; border-radius: 6px; cursor: pointer; color: var(--text-tertiary); transition: all 0.12s; }
+.toolbar-btn:hover { background: var(--bg-sidebar); color: var(--accent); }
+.toolbar-btn.done { color: var(--accent); }
+.toolbar-btn svg { width: 16px; height: 16px; stroke: currentColor; }
+
+/* ===== Input Area ===== */
+#chat-input-area { padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
+.input-wrap { position: relative; }
+.input-wrap textarea { width: 100%; min-height: 80px; max-height: 200px; padding: 10px 48px 10px 12px; font-family: var(--font); line-height: 1.5; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-card); color: var(--text-primary); resize: vertical; outline: none; transition: border-color 0.15s; }
+.input-wrap textarea:focus { border-color: var(--border-focus); }
+.input-wrap textarea::placeholder { color: var(--text-tertiary); }
+.btn-send { position: absolute; right: 8px; bottom: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; background: var(--accent); border-radius: 8px; cursor: pointer; color: #fff; transition: all 0.15s; }
+.btn-send:hover { background: var(--accent-hover); }
+.btn-send:disabled { background: var(--text-tertiary); cursor: not-allowed; }
+.btn-send svg { width: 16px; height: 16px; }
+.btn-send .spinner { display: none; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
+.btn-send.spinning svg { display: none; }
+.btn-send.spinning .spinner { display: block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#save-mode-hint { font-size: 11px; color: var(--accent); display: none; margin-top: 4px; }
+.save-mode #save-mode-hint { display: block; }
+
+/* ===== Thinking Indicator ===== */
+#thinking-bar { display: none; font-size: 11px; color: var(--text-tertiary); text-align: center; padding: 6px; background: rgba(0,0,0,0.02); border-radius: 5px; margin: 0 16px 4px; }
+#thinking-bar.visible { display: block; }
+#thinking-bar .dot-pulse::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
+@keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } 100% { content: ''; } }
+
+/* ===== Toast ===== */
+#toast-container { position: fixed; top: 16px; right: 16px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
+.toast { padding: 10px 16px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border); box-shadow: 0 4px 16px rgba(0,0,0,0.1); font-size: 13px; color: var(--text-primary); animation: slideIn 0.25s ease-out; max-width: 340px; }
+.toast.error { border-color: var(--danger-red); color: var(--danger-red); }
+.toast.success { border-color: #34c759; color: #34c759; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* ===== Settings Modal ===== */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 2000; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--bg-card); border-radius: 14px; box-shadow: 0 8px 40px rgba(0,0,0,0.15); width: 400px; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; border-bottom: 1px solid var(--border); }
+.modal-header h3 { font-size: 16px; font-weight: 600; }
+.modal-close { width: 28px; height: 28px; border: none; background: none; border-radius: 6px; cursor: pointer; font-size: 16px; color: var(--text-tertiary); display: flex; align-items: center; justify-content: center; }
+.modal-close:hover { background: var(--bg-sidebar); color: var(--text-primary); }
+.modal-body { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 16px; }
+.setting-group { display: flex; flex-direction: column; gap: 6px; }
+.setting-group label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.setting-group .hint { font-size: 11px; color: var(--text-tertiary); }
+.setting-row { display: flex; align-items: center; justify-content: space-between; }
+.setting-row span { font-size: 13px; color: var(--text-primary); }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+input[type="number"] { width: 60px; padding: 4px 6px; font-family: var(--font); font-size: 12px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--text-primary); outline: none; text-align: center; }
+input[type="number"]:focus { border-color: var(--border-focus); }
+input[type="text"].setting-path { width: 100%; padding: 6px 10px; font-family: var(--font); font-size: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-primary); outline: none; }
+input[type="text"].setting-path:focus { border-color: var(--border-focus); }
+textarea.setting-prompt { width: 100%; padding: 8px 10px; font-family: var(--font); font-size: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-primary); outline: none; resize: vertical; line-height: 1.5; }
+textarea.setting-prompt:focus { border-color: var(--border-focus); }
+.toggle-sw { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+.toggle-sw input { display: none; }
+.toggle-sw .track { position: absolute; inset: 0; background: #ddd; border-radius: 11px; cursor: pointer; transition: background 0.2s; }
+.toggle-sw input:checked + .track { background: var(--accent); }
+.toggle-sw .track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+.toggle-sw input:checked + .track::after { transform: translateX(18px); }
+.btn-restore { font-family: var(--font); font-size: 12px; font-weight: 500; color: var(--text-secondary); background: none; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; padding: 6px 14px; align-self: flex-start; transition: all 0.15s; }
+.btn-restore:hover { background: var(--bg-sidebar); color: var(--accent); border-color: var(--accent); }
+
+/* ===== Context Full Dialog ===== */
+#context-dialog .modal { width: 440px; }
+#context-dialog .radio-option { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 2px solid var(--border); border-radius: 10px; cursor: pointer; transition: border-color 0.15s; }
+#context-dialog .radio-option:hover { border-color: var(--accent); }
+#context-dialog .radio-option.selected { border-color: var(--accent); background: rgba(232,80,12,0.04); }
+#context-dialog .radio-option input { display: none; }
+#context-dialog .radio-option .radio-dot { width: 18px; height: 18px; border: 2px solid var(--text-tertiary); border-radius: 50%; flex-shrink: 0; margin-top: 1px; transition: all 0.15s; position: relative; }
+#context-dialog .radio-option.selected .radio-dot { border-color: var(--accent); }
+#context-dialog .radio-option.selected .radio-dot::after { content: ''; position: absolute; inset: 3px; background: var(--accent); border-radius: 50%; }
+#context-dialog .radio-option .opt-text strong { display: block; font-size: 13px; margin-bottom: 2px; }
+#context-dialog .radio-option .opt-text span { font-size: 12px; color: var(--text-secondary); }
+#context-dialog .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
+#context-dialog .btn-row button { font-family: var(--font); font-size: 13px; font-weight: 500; padding: 8px 18px; border-radius: 7px; cursor: pointer; transition: all 0.15s; }
+#context-dialog .btn-row .btn-primary { background: var(--accent); color: #fff; border: none; }
+#context-dialog .btn-row .btn-primary:hover { background: var(--accent-hover); }
+#context-dialog .btn-row .btn-secondary { background: none; color: var(--text-secondary); border: 1px solid var(--border); }
+#context-dialog .btn-row .btn-secondary:hover { background: var(--bg-sidebar); }
+
+/* ===== Confirm Dialog ===== */
+#confirm-dialog .modal { width: 380px; }
+#confirm-dialog .confirm-msg { font-size: 14px; color: var(--text-primary); line-height: 1.6; }
+
+@media (max-width: 900px) { #sidebar { width: 200px; } #reader { width: 300px; } }
+</style>
+</head>
+<body>
+
+<!-- Hidden file input (Safari: position trick, not display:none) -->
+<input type="file" accept=".epub" id="file-input" style="position:absolute;width:1px;height:1px;clip:rect(0,0,0,0);">
+
+<div id="app">
+  <!-- Header -->
+  <header id="header">
+    <div id="header-left">EPUB 阅读器</div>
+    <div id="header-right">
+      <select id="model-select">
+        <option value="">加载模型中...</option>
+      </select>
+      <button class="btn-header" id="btn-settings">设置</button>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <div id="main">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div id="sidebar-content">
+        <button class="btn-upload" id="btn-upload">打开 EPUB</button>
+        <div id="history-section">
+          <div class="section-title"><span>历史记录</span><span class="clear-link" id="clear-history">清空</span></div>
+          <div class="history-list" id="history-list"></div>
+        </div>
+        <div class="current-book" id="current-book" style="display:none"></div>
+        <input type="text" class="search-input" id="chapter-search" placeholder="搜索章节...">
+        <div class="chapter-list" id="chapter-list"></div>
+      </div>
+      <div id="sidebar-footer" style="display:none">
+        <div class="summary-bar" id="summary-bar">
+          <span id="summary-count">已选 0 章</span>
+          <span id="summary-tokens">0<span class="warn-icon"></span></span>
+        </div>
+        <button class="btn-save" id="btn-save-toggle">保存到 Obsidian</button>
+      </div>
+    </aside>
+
+    <div class="divider" id="divider-1"></div>
+
+    <!-- Reader -->
+    <section id="reader">
+      <div id="reader-header">
+        <div class="font-control">
+          <button class="font-btn" id="font-smaller">缩小</button>
+          <button class="font-btn" id="font-larger">放大</button>
+        </div>
+      </div>
+      <div id="reader-content">
+        <div class="empty-state" id="reader-empty"></div>
+      </div>
+    </section>
+
+    <div class="divider" id="divider-2"></div>
+
+    <!-- Chat -->
+    <section id="chat">
+      <div id="chat-status">
+        <div id="chat-status-top">
+          <span class="book-model" id="chat-book-model">尚未加载书籍</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar"><div class="progress-fill green" id="progress-fill"></div></div>
+          <span class="progress-pct" id="progress-pct">0%</span>
+          <button class="btn-reset" id="btn-reset">重置</button>
+        </div>
+        <div class="warning-bar" id="warning-40k" style="display:none">
+          <span id="warning-40k-msg"></span>
+          <button class="close-warn" id="close-warn-40k">✕</button>
+        </div>
+        <div class="warning-bar" id="warning-85" style="display:none">
+          <span>上下文接近上限，建议重置对话以释放空间</span>
+          <button class="close-warn" id="close-warn-85">✕</button>
+        </div>
+      </div>
+
+      <div id="chat-messages">
+        <div class="empty-state" id="chat-empty"></div>
+      </div>
+
+      <div id="thinking-bar"><span id="thinking-text"></span><span class="dot-pulse"></span></div>
+
+      <div id="chat-input-area">
+        <div class="input-wrap">
+          <textarea id="chat-input" placeholder="输入你的问题..." rows="4"></textarea>
+          <button class="btn-send" id="btn-send" title="发送">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+            <div class="spinner"></div>
+          </button>
+        </div>
+        <span id="save-mode-hint">已进入保存模式 — 勾选消息后点击「确认保存」或按 Esc 退出</span>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>设置</h3>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="setting-group">
+        <label>上下文窗口大小</label>
+        <div class="setting-row">
+          <input type="range" id="ctx-slider" min="8000" max="128000" value="48000" step="2000" style="flex:1">
+          <input type="number" id="ctx-number" value="48000" min="8000" max="128000" step="2000">
+        </div>
+        <span class="hint">当前：<span id="ctx-current">48000</span> tokens · Ollama 默认值：<span id="ctx-ollama-default">32768</span>（num_ctx 可覆盖）</span>
+        <span class="hint">建议 48K–64K，M3 16GB 内存建议不超过 64K</span>
+      </div>
+      <div class="setting-group">
+        <label>双语处理</label>
+        <div class="setting-row">
+          <span>仅显示中文内容（即时切换）</span>
+          <label class="toggle-sw"><input type="checkbox" id="chinese-only" checked><span class="track"></span></label>
+        </div>
+      </div>
+      <div class="setting-group">
+        <label>上下文管理策略</label>
+        <div class="setting-row">
+          <span>自动滑动窗口（80% 时移除早期对话）</span>
+          <label class="toggle-sw"><input type="checkbox" id="auto-slide" checked><span class="track"></span></label>
+        </div>
+        <div class="setting-row">
+          <span>80% 时弹窗询问（不自动滑动）</span>
+          <label class="toggle-sw"><input type="checkbox" id="ask-on-80"><span class="track"></span></label>
+        </div>
+        <div class="setting-row">
+          <span>保留最近</span>
+          <input type="number" id="slide-rounds" value="8" min="2" max="20">
+          <span>轮对话</span>
+        </div>
+      </div>
+      <div class="setting-group">
+        <label>Obsidian 保存路径</label>
+        <input type="text" class="setting-path" id="vault-path" value="Inbox/Epub阅读/" placeholder="相对于 vault 根目录的路径">
+      </div>
+      <div class="setting-group">
+        <label>自定义系统提示词 <span class="hint">（可用 {'{book_name}'} 引用书名，留空使用默认提示词）</span></label>
+        <textarea class="setting-prompt" id="system-prompt" rows="4" placeholder="你是博学的阅读助手。以下是《{book_name}》中用户选中的章节原文..."></textarea>
+      </div>
+      <button class="btn-restore" id="btn-restore">恢复默认设置</button>
+    </div>
+  </div>
+</div>
+
+<!-- Context Full Dialog -->
+<div class="modal-overlay" id="context-dialog">
+  <div class="modal">
+    <div class="modal-header"><h3>⚠️ 上下文已接近上限 (95%)</h3></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text-secondary)">请选择处理方式：</p>
+      <label class="radio-option selected" id="ctx-opt-slide">
+        <input type="radio" name="ctx-action" value="slide" checked>
+        <span class="radio-dot"></span>
+        <span class="opt-text"><strong>启用自动滑动窗口（推荐）</strong><span>保留最近 8 轮对话 + 早期讨论摘要，释放空间</span></span>
+      </label>
+      <label class="radio-option" id="ctx-opt-reset">
+        <input type="radio" name="ctx-action" value="reset">
+        <span class="radio-dot"></span>
+        <span class="opt-text"><strong>完全重置对话</strong><span>清空所有对话历史，仅保留章节选择</span></span>
+      </label>
+      <div class="btn-row">
+        <button class="btn-secondary" id="ctx-dialog-later">稍后再说</button>
+        <button class="btn-primary" id="ctx-dialog-confirm">确认</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div class="modal-overlay" id="confirm-dialog">
+  <div class="modal">
+    <div class="modal-header"><h3 id="confirm-title">确认操作</h3></div>
+    <div class="modal-body">
+      <p class="confirm-msg" id="confirm-msg"></p>
+      <div class="btn-row" style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn-secondary" id="confirm-cancel">取消</button>
+        <button class="btn-primary" id="confirm-ok">确认</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+// ======================================================================
+// A. CONSTANTS & CONFIG
+// ======================================================================
+const API_BASE = 'http://localhost:8765';
+
+// 前端错误上报
+window.onerror = function(msg, src, line, col, err) {
+  try {
+    var stack = (err && err.stack) ? String(err.stack) : '';
+    fetch(API_BASE + '/api/log-error', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: String(msg), source: String(src || ''), lineno: line || 0, colno: col || 0, stack: stack})
+    });
+  } catch(e) {}
+  console.error('JS Error:', msg, src, line, col, stack);
+};
+// ======================================================================
+const FONT_MIN = 14, FONT_MAX = 22, FONT_DEFAULT = 16;
+const DEFAULT_CONTEXT_LIMIT = 48000;
+const MAX_HISTORY = 10;
+const CHAPTER_WARN_LIMIT = 40000;
+const DEFAULT_SLIDE_ROUNDS = 8;
+const DEFAULT_VAULT_PATH = 'Inbox/Epub阅读/';
+const MAX_CONVERSATION_ROUNDS = 8;
+const DEFAULT_SYSTEM_PROMPT = '你是博学的阅读助手。以下是《{book_name}》中用户选中的章节原文。优先基于原文内容回答并引用原文。如果问题超出原文范围，可以结合你的知识回答，但要明确区分原文信息和你自己的知识。不知道就说不知道，不要编造信息。';
+
+// ======================================================================
+// B. GLOBAL STATE
+// ======================================================================
+let chapters = [];               // {title, text, text_cn, tokens_approx}
+let bookName = '';
+let repairLevel = 0;
+let selectedChapters = new Set(); // indices
+let chapterTokens = 0;
+let customSystemPrompt = '';     // 用户自定义系统提示词，空字符串=使用默认
+let conversationTokens = 0;
+let conversationHistory = [];    // [{role, content}]
+let contextLimit = DEFAULT_CONTEXT_LIMIT;
+let chineseOnly = true;
+let currentModel = '';
+let ollamaModels = [];
+let webSearchEnabled = false;
+let saveMode = false;
+let autoSlideWindow = true;
+let askOn80 = false;
+let slideRounds = DEFAULT_SLIDE_ROUNDS;
+let vaultPath = DEFAULT_VAULT_PATH;
+let activeAbortController = null;
+let isStreaming = false;
+let globalFontSize = FONT_DEFAULT;
+let msgIdCounter = 0;
+let prevOllamaModel = '';
+let warning40kDismissed = false;
+let warning85Dismissed = false;
+let recalcTimer = null;  // debounce timer for recalcChapterTokens
+
+// ======================================================================
+// C. UTILITY FUNCTIONS
+// ======================================================================
+function toast(msg, type = 'info', duration = 2500) {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type === 'info' ? '' : type);
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(() => t.remove(), 300); }, duration);
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function formatTokens(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return String(n);
+}
+
+function formatDate(isoString) {
+  const d = new Date(isoString);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today - 86400000);
+  const dDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const time = d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+  if (dDay.getTime() === today.getTime()) return '今天 ' + time;
+  if (dDay.getTime() === yesterday.getTime()) return '昨天 ' + time;
+  return (d.getMonth() + 1) + '-' + d.getDate() + ' ' + time;
+}
+
+function debounce(fn, ms) {
+  let timer;
+  return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
+}
+
+function $(sel) { return document.querySelector(sel); }
+function $$(sel) { return document.querySelectorAll(sel); }
+
+function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
+
+function getDisplayText(chapter) {
+  return chineseOnly ? chapter.text_cn : chapter.text;
+}
+
+// ======================================================================
+// D. API LAYER
+// ======================================================================
+async function apiLoadOllamaModels() {
+  try {
+    const resp = await fetch(API_BASE + '/api/ollama-models');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    ollamaModels = data.models || [];
+    return ollamaModels;
+  } catch (err) {
+    console.warn('Ollama 模型列表获取失败:', err);
+    return [];
+  }
+}
+
+async function apiUploadEpub(file) {
+  const form = new FormData();
+  form.append('file', file);
+  const resp = await fetch(API_BASE + '/api/load-epub', { method: 'POST', body: form });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error || '上传失败 (HTTP ' + resp.status + ')');
+  }
+  return await resp.json();
+}
+
+async function apiCountTokens(text, model) {
+  const resp = await fetch(API_BASE + '/api/count-tokens', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, model })
+  });
+  if (!resp.ok) return 0;
+  const data = await resp.json();
+  return data.tokens || 0;
+}
+
+async function apiCountTokensBatch(texts, model) {
+  if (!texts || texts.length === 0) return [];
+  const resp = await fetch(API_BASE + '/api/count-tokens-batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ texts, model })
+  });
+  if (!resp.ok) throw new Error('批量 token 计算失败');
+  const data = await resp.json();
+  return data.tokens || [];
+}
+
+async function apiSaveObsidian(bookName, messages) {
+  const resp = await fetch(API_BASE + '/api/save-obsidian', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ book_name: bookName, messages })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.detail || err.error || '保存失败');
+  }
+  return await resp.json();
+}
+
+async function apiSearchDuckDuckGo(query) {
+  try {
+    const resp = await fetch(
+      'https://api.duckduckgo.com/?q=' + encodeURIComponent(query) + '&format=json&no_html=1&skip_disambig=1',
+      { signal: AbortSignal.timeout(8000) }
+    );
+    const data = await resp.json();
+    const results = [];
+    if (data.AbstractText) {
+      results.push({ title: data.Heading || '摘要', snippet: data.AbstractText, url: data.AbstractURL });
+    }
+    for (const topic of (data.RelatedTopics || [])) {
+      if (topic.Text && topic.FirstURL) {
+        results.push({ title: topic.Text.split(' - ')[0], snippet: topic.Text, url: topic.FirstURL });
+      }
+    }
+    return results.slice(0, 5);
+  } catch (err) {
+    console.warn('联网搜索失败:', err);
+    return [];
+  }
+}
+
+// SSE Stream handler with cross-chunk buffer
+function apiChatStream(body, { onToken, onTokensUsed, onDone, onError }) {
+  const controller = new AbortController();
+  activeAbortController = controller;
+
+  (async () => {
+    try {
+      const resp = await fetch(API_BASE + '/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(300000)])
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        onError(err.error || err.detail || '对话请求失败 (HTTP ' + resp.status + ')');
+        return;
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = ''; // cross-chunk line buffer
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // keep incomplete last line
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6);
+          if (payload === '[DONE]') { onDone(); return; }
+          try {
+            const data = JSON.parse(payload);
+            if (data.content) onToken(data.content);
+            if (data.tokens_used !== undefined) onTokensUsed(data.tokens_used);
+            if (data.error) onError(data.error);
+          } catch (e) { /* skip non-JSON lines */ }
+        }
+      }
+      // flush remaining buffer
+      if (buffer.startsWith('data: ')) {
+        const payload = buffer.slice(6);
+        if (payload !== '[DONE]') {
+          try {
+            const data = JSON.parse(payload);
+            if (data.content) onToken(data.content);
+            if (data.tokens_used !== undefined) onTokensUsed(data.tokens_used);
+          } catch (e) { /* skip */ }
+        }
+      }
+      onDone();
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      onError('网络连接失败，请检查服务是否运行');
+    }
+  })();
+
+  return controller;
+}
+
+// ======================================================================
+// E. LOCALSTORAGE PERSISTENCE
+// ======================================================================
+function saveHistory() {
+  const data = (loadHistory() || []).filter(h => h.name !== bookName);
+  if (bookName && chapters.length > 0) {
+    data.unshift({
+      name: bookName,
+      chapters: chapters.map(c => ({ title: c.title })),
+      totalChapters: chapters.length,
+      lastOpened: new Date().toISOString()
+    });
+  }
+  const trimmed = data.slice(0, MAX_HISTORY);
+  try { localStorage.setItem('epub-reader-history', JSON.stringify(trimmed)); } catch (e) {}
+  return trimmed;
+}
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem('epub-reader-history')) || []; } catch (e) { return []; }
+}
+
+function removeFromHistory(name) {
+  let data = loadHistory().filter(h => h.name !== name);
+  try { localStorage.setItem('epub-reader-history', JSON.stringify(data)); } catch (e) {}
+  renderHistoryList();
+}
+
+function clearHistory() {
+  try { localStorage.removeItem('epub-reader-history'); } catch (e) {}
+  renderHistoryList();
+}
+
+function saveSettings() {
+  try {
+    localStorage.setItem('epub-reader-settings', JSON.stringify({
+      contextLimit, chineseOnly, autoSlideWindow, askOn80, slideRounds, vaultPath, customSystemPrompt
+    }));
+  } catch (e) {}
+}
+
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem('epub-reader-settings'));
+    if (s) {
+      contextLimit = s.contextLimit || DEFAULT_CONTEXT_LIMIT;
+      chineseOnly = s.chineseOnly !== undefined ? s.chineseOnly : true;
+      autoSlideWindow = s.autoSlideWindow !== undefined ? s.autoSlideWindow : true;
+      askOn80 = s.askOn80 || false;
+      slideRounds = s.slideRounds || DEFAULT_SLIDE_ROUNDS;
+      vaultPath = s.vaultPath || DEFAULT_VAULT_PATH;
+      customSystemPrompt = s.customSystemPrompt || '';
+    }
+  } catch (e) {}
+}
+
+function applySettingsToForm() {
+  $('#ctx-slider').value = contextLimit;
+  $('#ctx-number').value = contextLimit;
+  $('#ctx-current').textContent = contextLimit;
+  $('#chinese-only').checked = chineseOnly;
+  $('#auto-slide').checked = autoSlideWindow;
+  $('#ask-on-80').checked = askOn80;
+  $('#ask-on-80').disabled = autoSlideWindow;
+  $('#auto-slide').disabled = askOn80;
+  $('#slide-rounds').value = slideRounds;
+  $('#vault-path').value = vaultPath;
+  $('#system-prompt').value = customSystemPrompt;
+}
+
+function saveConversation() {
+  try {
+    localStorage.setItem('epub-reader-conversation', JSON.stringify(
+      conversationHistory.slice(-20)
+    ));
+  } catch (e) {}
+}
+
+function loadConversation() {
+  try { return JSON.parse(localStorage.getItem('epub-reader-conversation')) || []; } catch (e) { return []; }
+}
+
+// ======================================================================
+// F. UI RENDERING
+// ======================================================================
+function renderHistoryList() {
+  const list = $('#history-list');
+  const data = loadHistory();
+  if (data.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--text-tertiary);padding:8px">暂无记录</div>';
+    return;
+  }
+  list.innerHTML = data.map((h, i) =>
+    '<div class="history-item' + (h.name === bookName ? ' active' : '') + '" data-idx="' + i + '">' +
+    '<div class="book-info"><div class="book-name">' + escapeHtml(h.name) + '</div>' +
+    '<div class="book-meta">' + h.totalChapters + '章 · ' + formatDate(h.lastOpened) + '</div></div>' +
+    '<button class="btn-delete" data-name="' + escapeHtml(h.name) + '">✕</button></div>'
+  ).join('');
+
+  // click handlers
+  list.querySelectorAll('.history-item').forEach(item => {
+    item.addEventListener('click', function(e) {
+      if (e.target.closest('.btn-delete')) return;
+      const name = this.querySelector('.book-name').textContent;
+      loadFromHistory(name);
+    });
+  });
+  list.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      removeFromHistory(this.dataset.name);
+    });
+  });
+}
+
+function renderChapterList(filterQuery = '') {
+  const container = $('#chapter-list');
+  const q = (filterQuery || '').toLowerCase();
+
+  if (chapters.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  let html = '';
+  let visible = 0;
+  chapters.forEach((ch, i) => {
+    const match = !q || ch.title.toLowerCase().includes(q);
+    if (!match) return;
+    visible++;
+    const checked = selectedChapters.has(i);
+    const tokens = ch.tokens !== undefined ? ch.tokens : (ch.tokens_approx || 0);
+    html += '<label class="chapter-item">' +
+      '<input type="checkbox" data-idx="' + i + '" ' + (checked ? 'checked' : '') + '>' +
+      '<span class="chapter-title">' + escapeHtml(ch.title) + '</span>' +
+      '<span class="chapter-meta">' + formatTokens(tokens) + '</span>' +
+      '</label>';
+  });
+
+  if (visible === 0 && q) {
+    html = '<div class="no-results">无匹配章节</div>';
+  }
+
+  // 章节计数提示
+  if (chapters.length > 0) {
+    html += '<div style="font-size:11px;color:var(--text-tertiary);text-align:center;padding:8px 0">共 ' + chapters.length + ' 章' + (q ? '，匹配 ' + visible + ' 章' : '，已选 ' + selectedChapters.size + ' 章') + '</div>';
+  }
+
+  container.innerHTML = html;
+
+  // bind checkbox events
+  container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', function() {
+      const idx = parseInt(this.dataset.idx);
+      handleChapterToggle(idx, this.checked);
+    });
+  });
+}
+
+function updateChapterTokenDisplay() {
+  $('#chapter-list').querySelectorAll('.chapter-item').forEach(item => {
+    const cb = item.querySelector('input[type="checkbox"]');
+    if (!cb) return;
+    const idx = parseInt(cb.dataset.idx);
+    const meta = item.querySelector('.chapter-meta');
+    if (meta && chapters[idx] && chapters[idx].tokens !== undefined) {
+      meta.textContent = formatTokens(chapters[idx].tokens);
+    }
+  });
+}
+
+function updateSummaryBar() {
+  const footer = $('#sidebar-footer');
+  if (chapters.length === 0) {
+    footer.style.display = 'none';
+    return;
+  }
+  footer.style.display = 'flex';
+  const count = selectedChapters.size;
+  const total = chapters.length;
+  const bar = $('#summary-bar');
+  const warnIcon = bar.querySelector('.warn-icon');
+
+  $('#summary-count').textContent = '已选 ' + count + '/' + total + ' 章';
+  $('#summary-tokens').innerHTML = formatTokens(chapterTokens) + '<span class="warn-icon"></span>';
+
+  const remainingForChat = contextLimit - 8000;
+  bar.className = 'summary-bar';
+  bar.querySelector('.warn-icon').textContent = '';
+
+  if (chapterTokens > remainingForChat) {
+    bar.classList.add('danger');
+    bar.querySelector('.warn-icon').textContent = ' ⚠';
+  } else if (chapterTokens > CHAPTER_WARN_LIMIT) {
+    bar.classList.add('warning');
+    bar.querySelector('.warn-icon').textContent = ' ⚠';
+  }
+}
+
+function updateCurrentBookIndicator() {
+  const el = $('#current-book');
+  if (bookName) {
+    el.style.display = 'block';
+    el.textContent = '当前：《' + bookName + '》';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+function renderReaderArea() {
+  const container = $('#reader-content');
+  const empty = $('#reader-empty');
+
+  if (selectedChapters.size === 0) {
+    container.innerHTML = '';
+    // 重新创建 empty state（之前的 innerHTML 可能已清除）
+    const emptyEl = document.createElement('div');
+    emptyEl.className = 'empty-state';
+    emptyEl.id = 'reader-empty';
+    emptyEl.innerHTML = '';
+    container.appendChild(emptyEl);
+    return;
+  }
+
+  // 移除旧的 empty state（如果存在）
+  if (empty) empty.remove();
+
+  const selected = [...selectedChapters].sort((a, b) => a - b);
+  let html = '';
+  selected.forEach((idx, i) => {
+    if (i > 0) html += '<div class="reader-chapter-divider">───</div>';
+    const ch = chapters[idx];
+    html += '<span class="reader-chapter-title">' + escapeHtml(ch.title) + '</span>';
+    const text = getDisplayText(ch);
+    const paragraphs = text.split('\n').filter(p => p.trim());
+    paragraphs.forEach(p => {
+      html += '<p>' + escapeHtml(p) + '</p>';
+    });
+  });
+  container.innerHTML = html;
+  container.scrollTop = 0;
+}
+
+function addMessage(role, content, msgId) {
+  const container = $('#chat-messages');
+  const empty = $('#chat-empty');
+  if (empty) empty.style.display = 'none';
+
+  if (!msgId) msgId = 'msg-' + (++msgIdCounter);
+
+  if (role === 'system') {
+    const el = document.createElement('div');
+    el.className = 'msg-system';
+    el.id = msgId;
+    el.textContent = content;
+    container.appendChild(el);
+    container.scrollTop = container.scrollHeight;
+    return msgId;
+  }
+
+  const row = document.createElement('div');
+  row.className = 'msg-row ' + role;
+  row.id = msgId;
+
+  // save mode checkbox
+  const sel = document.createElement('label');
+  sel.className = 'msg-sel';
+  sel.innerHTML = '<input type="checkbox" data-msg="' + msgId + '"><span class="cb-box"></span>';
+  row.appendChild(sel);
+
+  // bubble
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  if (role === 'assistant' && typeof marked !== 'undefined') {
+    bubble.innerHTML = marked.parse(content);
+  } else {
+    bubble.innerHTML = content.replace(/\n/g, '<br>');
+  }
+  row.appendChild(bubble);
+
+  // toolbar
+  const toolbar = document.createElement('div');
+  toolbar.className = 'msg-toolbar';
+  // copy button
+  toolbar.innerHTML =
+    '<button class="toolbar-btn btn-copy" title="复制" data-msg="' + msgId + '">' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+    '</button>';
+  // save button (AI messages only)
+  if (role === 'assistant') {
+    toolbar.innerHTML +=
+      '<button class="toolbar-btn btn-save-single" title="保存到 Obsidian" data-msg="' + msgId + '">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+      '</button>';
+  }
+  row.appendChild(toolbar);
+
+  // toolbar events
+  row.querySelector('.btn-copy').addEventListener('click', function(e) {
+    e.stopPropagation();
+    copyMessage(msgId, this);
+  });
+  const saveBtn = row.querySelector('.btn-save-single');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      saveSingleMessage(msgId, this);
+    });
+  }
+
+  container.appendChild(row);
+  container.scrollTop = container.scrollHeight;
+  return msgId;
+}
+
+function updateMessageContent(msgId, content, isMarkdown = false) {
+  const row = document.getElementById(msgId);
+  if (!row) return;
+  const bubble = row.querySelector('.msg-bubble');
+  if (!bubble) return;
+  if (isMarkdown && typeof marked !== 'undefined') {
+    bubble.innerHTML = marked.parse(content);
+  } else {
+    bubble.innerHTML = content.replace(/\n/g, '<br>');
+  }
+  const container = $('#chat-messages');
+  container.scrollTop = container.scrollHeight;
+}
+
+function addSystemMessage(content) {
+  return addMessage('system', content);
+}
+
+function renderConversation(history) {
+  if (!history || history.length === 0) return;
+  history.forEach(msg => {
+    addMessage(msg.role, msg.content);
+  });
+}
+
+function clearChatMessages() {
+  $('#chat-messages').innerHTML = '';
+  const empty = document.createElement('div');
+  empty.className = 'empty-state';
+  empty.id = 'chat-empty';
+  empty.innerHTML = '';
+  $('#chat-messages').appendChild(empty);
+}
+
+function updateContextBar() {
+  const total = chapterTokens + conversationTokens;
+  const pct = contextLimit > 0 ? Math.min(100, (total / contextLimit) * 100) : 0;
+  const fill = $('#progress-fill');
+  const pctEl = $('#progress-pct');
+  const resetBtn = $('#btn-reset');
+
+  fill.style.width = Math.max(pct, 0.5) + '%';
+  fill.className = 'progress-fill ' + getContextColor(pct);
+  // 小百分比显示一位小数，避免 0.1% → 0% 的误解
+  pctEl.textContent = pct > 0 && pct < 1 ? pct.toFixed(1) + '%' : Math.round(pct) + '%';
+
+  // reset button: visible only when > 80%
+  if (pct > 80) {
+    resetBtn.classList.add('visible');
+  } else {
+    resetBtn.classList.remove('visible');
+  }
+
+  // update send button state
+  updateSendButtonState();
+}
+
+function getContextColor(pct) {
+  if (pct >= 90) return 'black';
+  if (pct >= 80) return 'red';
+  if (pct >= 60) return 'yellow';
+  return 'green';
+}
+
+function updateWarningBar() {
+  const bar40k = $('#warning-40k');
+  const bar85 = $('#warning-85');
+  const total = chapterTokens + conversationTokens;
+  const pct = contextLimit > 0 ? (total / contextLimit) * 100 : 0;
+
+  // 40K warning
+  if (chapterTokens > CHAPTER_WARN_LIMIT && !warning40kDismissed) {
+    bar40k.style.display = 'flex';
+    $('#warning-40k-msg').textContent =
+      '⚠️ 选中章节超过 40K tokens（' + formatTokens(chapterTokens) + '），建议减少章节选择以确保对话空间';
+  } else {
+    bar40k.style.display = 'none';
+  }
+
+  // 85% warning
+  if (pct >= 85 && pct < 95 && !warning85Dismissed) {
+    bar85.style.display = 'flex';
+  } else {
+    bar85.style.display = 'none';
+  }
+}
+
+function updateSendButtonState() {
+  const btn = $('#btn-send');
+  const total = chapterTokens + conversationTokens;
+  const disabled = selectedChapters.size === 0 || (total > contextLimit);
+  btn.disabled = disabled;
+  // 流式输出时不 disable（让用户可以点击中止），但通过 CSS class 显示停止状态
+  if (isStreaming) {
+    btn.classList.add('spinning');
+    btn.title = '停止生成';
+  } else {
+    btn.classList.remove('spinning');
+    btn.title = '发送';
+  }
+}
+
+function updateStatusBar() {
+  const el = $('#chat-book-model');
+  if (bookName) {
+    const modelLabel = currentModel.replace('ollama:', '').replace('deepseek:', '');
+    el.textContent = '《' + bookName + '》 · ' + modelLabel;
+  } else {
+    el.textContent = '尚未加载书籍';
+  }
+}
+
+// ======================================================================
+// G. CORE BUSINESS LOGIC
+// ======================================================================
+async function recalcChapterTokens() {
+  if (selectedChapters.size === 0) {
+    chapterTokens = 0;
+    updateSummaryBar();
+    updateContextBar();
+    updateWarningBar();
+    return;
+  }
+  const selected = [...selectedChapters].sort((a, b) => a - b);
+  const texts = selected.map(idx => getDisplayText(chapters[idx]));
+  try {
+    const tokens = await apiCountTokensBatch(texts, currentModel);
+    // update stored tokens for each selected chapter
+    selected.forEach((idx, i) => {
+      chapters[idx].tokens = tokens[i] || chapters[idx].tokens_approx;
+    });
+    chapterTokens = tokens.reduce((a, b) => a + b, 0);
+    updateChapterTokenDisplay();
+  } catch (err) {
+    // fallback: use tokens_approx
+    chapterTokens = selected.reduce((sum, idx) => sum + (chapters[idx].tokens_approx || 0), 0);
+    console.warn('批量 token 计算失败，使用近似值:', err);
+  }
+  updateSummaryBar();
+  updateContextBar();
+  updateWarningBar();
+}
+
+// 防抖版本：快速连续切换章节时只触发最后一次
+function recalcChapterTokensDebounced(delay = 400) {
+  if (recalcTimer) clearTimeout(recalcTimer);
+  recalcTimer = setTimeout(() => {
+    recalcTimer = null;
+    recalcChapterTokens();
+  }, delay);
+}
+
+function handleChapterToggle(idx, checked) {
+  const prevDisplayed = new Set(selectedChapters);
+  if (checked) {
+    selectedChapters.add(idx);
+  } else {
+    selectedChapters.delete(idx);
+  }
+  const nowDisplayed = new Set(selectedChapters);
+
+  // check if displayed chapters changed (affects reader content)
+  const displayedChanged = !setsEqual(prevDisplayed, nowDisplayed);
+
+  if (displayedChanged) {
+    renderReaderArea();
+  }
+  recalcChapterTokensDebounced();
+}
+
+function setsEqual(a, b) {
+  if (a.size !== b.size) return false;
+  for (const v of a) { if (!b.has(v)) return false; }
+  return true;
+}
+
+async function sendMessage() {
+  if (isStreaming) {
+    // stop streaming
+    if (activeAbortController) {
+      activeAbortController.abort();
+      activeAbortController = null;
+    }
+    isStreaming = false;
+    updateSendButtonState();
+    return;
+  }
+
+  const textarea = $('#chat-input');
+  const question = textarea.value.trim();
+  if (!question) return;
+  if (selectedChapters.size === 0) {
+    toast('请先在左侧选择要阅读的章节');
+    return;
+  }
+
+  const total = chapterTokens + conversationTokens;
+  if (total > contextLimit) {
+    toast('上下文已满，请重置对话或减少章节选择');
+    return;
+  }
+
+  // abort previous stream
+  if (activeAbortController) {
+    activeAbortController.abort();
+    activeAbortController = null;
+  }
+
+  isStreaming = true;
+  textarea.value = '';
+  textarea.style.height = 'auto';
+  updateSendButtonState();
+
+  // 安全超时：5分钟后强制重置 streaming 状态
+  const streamTimeout = setTimeout(() => {
+    if (isStreaming) {
+      isStreaming = false;
+      if (activeAbortController) {
+        activeAbortController.abort();
+        activeAbortController = null;
+      }
+      updateSendButtonState();
+      console.warn('流式超时保护触发');
+    }
+  }, 300000);
+
+  // add user message
+  const userMsgId = addMessage('user', question);
+  conversationHistory.push({ role: 'user', content: question });
+
+  // add empty AI message for streaming
+  const aiMsgId = addMessage('assistant', '');
+  const aiRow = document.getElementById(aiMsgId);
+  if (aiRow) aiRow.classList.add('streaming');
+  let aiContent = '';
+  let tokensUsed = 0;
+
+  // web search (if enabled + DeepSeek)
+  let searchResults = [];
+  if (webSearchEnabled && currentModel.startsWith('deepseek')) {
+    showThinking('正在搜索...');
+    searchResults = await apiSearchDuckDuckGo(question);
+    hideThinking();
+    if (searchResults.length === 0) {
+      addSystemMessage('未找到相关搜索结果');
+    }
+  }
+
+  // build messages
+  const selected = [...selectedChapters].sort((a, b) => a - b);
+  const chapterText = selected.map(idx => {
+    const ch = chapters[idx];
+    return '## ' + ch.title + '\n\n' + getDisplayText(ch);
+  }).join('\n\n---\n\n');
+
+  let augmentedQuestion = question;
+  if (searchResults.length > 0) {
+    const ctx = searchResults.map((r, i) =>
+      '[搜索结果 ' + (i + 1) + ']\n标题: ' + r.title + '\n来源: ' + r.url + '\n内容: ' + r.snippet
+    ).join('\n\n');
+    augmentedQuestion =
+      '以下是与问题相关的网络搜索结果，请结合这些信息和《' + bookName + '》原文回答：\n\n' +
+      ctx + '\n\n---\n用户问题: ' + question +
+      '\n\n要求: 优先使用原文内容回答。如果原文信息不足，再参考搜索结果。引用搜索结果时需注明来源。';
+  }
+
+  const messages = [
+    { role: 'system', content: '你是博学的阅读助手。以下是《' + bookName + '》中用户选中的章节原文。优先基于原文内容回答并引用原文。如果问题超出原文范围，可以结合你的知识回答，但要明确区分原文信息和你自己的知识。不知道就说不知道，不要编造信息。\n\n' + chapterText },
+    ...conversationHistory.slice(0, -1), // exclude the user message we just added
+    { role: 'user', content: augmentedQuestion }
+  ];
+
+  const body = {
+    model: currentModel,
+    chapters_text: chapterText,
+    book_name: bookName,
+    history: conversationHistory.slice(0, -1),
+    question: augmentedQuestion,
+    context_limit: contextLimit,
+    system_prompt: customSystemPrompt || ''
+  };
+
+  apiChatStream(body, {
+    onToken(content) {
+      aiContent += content;
+      updateMessageContent(aiMsgId, aiContent, false);
+    },
+    onTokensUsed(tokens) {
+      tokensUsed = tokens;
+    },
+    onDone() {
+      clearTimeout(streamTimeout);
+      // render final markdown
+      updateMessageContent(aiMsgId, aiContent, true);
+      if (aiRow) aiRow.classList.remove('streaming');
+      conversationHistory.push({ role: 'assistant', content: aiContent });
+      conversationTokens += tokensUsed;
+      isStreaming = false;
+      activeAbortController = null;
+      updateContextBar();
+      updateWarningBar();
+      updateSendButtonState();
+      saveConversation();
+      checkContextAndHandle();
+    },
+    onError(msg) {
+      clearTimeout(streamTimeout);
+      updateMessageContent(aiMsgId, '⚠️ ' + msg, false);
+      if (aiRow) aiRow.classList.remove('streaming');
+      isStreaming = false;
+      activeAbortController = null;
+      updateSendButtonState();
+      toast(msg, 'error');
+    }
+  });
+}
+
+function checkContextAndHandle() {
+  const total = chapterTokens + conversationTokens;
+  const pct = contextLimit > 0 ? (total / contextLimit) : 0;
+
+  if (pct >= 0.95) {
+    showContextFullDialog();
+  } else if (pct >= 0.85) {
+    warning85Dismissed = false;
+    updateWarningBar();
+  }
+
+  if (pct >= 0.80 && autoSlideWindow && conversationTokens > 0) {
+    const result = applySlidingWindow(conversationHistory);
+    if (result.dropped > 0) {
+      conversationHistory = result.history;
+      addSystemMessage('📝 已自动移除 ' + result.dropped + ' 轮较早对话，保留最近讨论');
+      conversationTokens = Math.max(0, conversationTokens - Math.floor(conversationTokens * 0.3)); // rough estimate
+      updateContextBar();
+      updateWarningBar();
+      saveConversation();
+    }
+  }
+
+  updateWarningBar();
+}
+
+function applySlidingWindow(history) {
+  const userMessages = history.filter(m => m.role === 'user');
+  const rounds = userMessages.length;
+
+  if (rounds <= MAX_CONVERSATION_ROUNDS) {
+    return { history, dropped: 0 };
+  }
+
+  const cutoffIndex = history.findIndex(
+    (m, i) => m.role === 'user' &&
+    history.slice(0, i + 1).filter(x => x.role === 'user').length > rounds - MAX_CONVERSATION_ROUNDS
+  );
+
+  if (cutoffIndex <= 0) return { history, dropped: 0 };
+
+  const dropped = history.slice(0, cutoffIndex);
+  const recent = history.slice(cutoffIndex);
+
+  const topicList = dropped
+    .filter(m => m.role === 'user')
+    .map(m => m.content.slice(0, 80))
+    .join('；');
+
+  return {
+    history: [
+      { role: 'system', content: '[早期讨论摘要] 此前讨论了：' + (topicList || '无') },
+      ...recent
+    ],
+    dropped: Math.floor(dropped.filter(m => m.role === 'user').length)
+  };
+}
+
+function resetConversation() {
+  showConfirmDialog('确定要重置对话吗？章节选择和原文不受影响。', () => {
+    clearChatMessages();
+    conversationHistory = [];
+    conversationTokens = 0;
+    addSystemMessage('📝 对话已重置，可以开始新的讨论');
+    updateContextBar();
+    updateWarningBar();
+    updateSendButtonState();
+    saveConversation();
+    toast('对话已重置');
+  });
+}
+
+async function handleModelChange(newModel) {
+  if (currentModel === newModel) return;
+
+  if (newModel.startsWith('deepseek')) {
+    if (currentModel.startsWith('ollama:')) prevOllamaModel = currentModel;
+    webSearchEnabled = true;
+    toast('已切换到 DeepSeek，发送消息时将自动开启联网搜索');
+  } else if (newModel.startsWith('ollama:')) {
+    webSearchEnabled = false;
+  }
+
+  currentModel = newModel;
+  updateStatusBar();
+
+  // recalculate tokens with new tokenizer
+  if (chapters.length > 0) {
+    await recalcChapterTokens();
+  }
+}
+
+async function resetBookState() {
+  bookName = '';
+  chapters = [];
+  repairLevel = 0;
+  selectedChapters = new Set();
+  chapterTokens = 0;
+  conversationTokens = 0;
+  conversationHistory = [];
+  warning40kDismissed = false;
+  warning85Dismissed = false;
+
+  clearChatMessages();
+  renderChapterList();
+  renderReaderArea();
+  updateCurrentBookIndicator();
+  updateStatusBar();
+  updateSummaryBar();
+  updateContextBar();
+  updateWarningBar();
+  updateSendButtonState();
+  saveConversation();
+
+  $('#chat-book-model').textContent = '尚未加载书籍';
+  $('#sidebar-footer').style.display = 'none';
+  toast('已清空所有内容');
+}
+
+async function loadFromHistory(name) {
+  // Try to load from backend cache
+  try {
+    const resp = await fetch(API_BASE + '/api/load-epub', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ book_name: name, from_cache: true })
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      applyBookData(data);
+      toast('已从缓存加载《' + name + '》');
+      return;
+    }
+  } catch (e) {}
+
+  toast('需要重新上传 EPUB 文件', 'error');
+}
+
+async function handleFileSelected(file) {
+  if (!file) return;
+  if (conversationHistory.length > 0) {
+    showConfirmDialog('加载新书将清空当前对话，是否继续？', async () => {
+      await doUpload(file);
+    });
+  } else {
+    await doUpload(file);
+  }
+}
+
+async function doUpload(file) {
+  const btn = $('#btn-upload');
+  btn.disabled = true;
+  btn.textContent = '加载中...';
+
+  try {
+    const data = await apiUploadEpub(file);
+    applyBookData(data);
+
+    // handle repair level toasts
+    if (data.repair_level === 1) {
+      toast('EPUB 目录结构已自动修复，章节顺序可能与原书略有差异');
+    } else if (data.repair_level === 2) {
+      toast('EPUB 文件存在损坏，已尽力修复并提取可读内容');
+    } else if (data.repair_level === 3) {
+      toast('⚠️ EPUB 严重损坏，已使用原始模式提取文本片段，无章节结构', 'error');
+    }
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '打开 EPUB';
+  }
+}
+
+function applyBookData(data) {
+  bookName = data.name || '';
+  chapters = data.chapters || [];
+  repairLevel = data.repair_level || 0;
+  selectedChapters = new Set();
+
+  // 自动选中前 2 个有实质内容的章节（跳过 < 200 字的扉页/版权页）
+  let autoSelectCount = 0;
+  for (let i = 0; i < chapters.length && autoSelectCount < 2; i++) {
+    const text = getDisplayText(chapters[i]);
+    if (text.length >= 200) {
+      selectedChapters.add(i);
+      autoSelectCount++;
+    }
+  }
+  // 如果所有章节都太短，至少选前 2 个
+  if (selectedChapters.size === 0) {
+    for (let i = 0; i < Math.min(2, chapters.length); i++) {
+      selectedChapters.add(i);
+    }
+  }
+
+  chapterTokens = 0;
+  conversationTokens = 0;
+  conversationHistory = [];
+  warning40kDismissed = false;
+  warning85Dismissed = false;
+
+  clearChatMessages();
+  renderChapterList();
+  updateCurrentBookIndicator();
+  updateStatusBar();
+  saveHistory();
+  renderHistoryList();
+  renderReaderArea();
+
+  // 立即用 tokens_approx 显示近似 token 数（不等异步 API）
+  chapterTokens = [...selectedChapters].reduce((sum, idx) => sum + (chapters[idx].tokens_approx || 0), 0);
+  updateSummaryBar();
+  updateContextBar();
+  updateWarningBar();
+
+  // 异步精确计算 token
+  recalcChapterTokens();
+
+  // update settings form
+  applySettingsToForm();
+
+  $('#chat-book-model').textContent = bookName ? '《' + bookName + '》' : '尚未加载书籍';
+
+  // 更新对话区空状态文案
+  const chatEmpty = $('#chat-empty');
+  if (chatEmpty) {
+    chatEmpty.innerHTML = '';
+  }
+}
+
+// ======================================================================
+// H. EVENT HANDLERS
+// ======================================================================
+function copyMessage(msgId, btn) {
+  const row = document.getElementById(msgId);
+  if (!row) return;
+  const bubble = row.querySelector('.msg-bubble');
+  const text = bubble ? bubble.textContent : '';
+  const origHTML = btn.innerHTML;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;stroke:currentColor"><polyline points="20 6 9 17 4 12"/></svg>';
+      btn.classList.add('done');
+      toast('已复制到剪贴板');
+      setTimeout(() => { btn.innerHTML = origHTML; btn.classList.remove('done'); }, 1500);
+    }).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); toast('已复制到剪贴板'); } catch (e) { toast('复制失败', 'error'); }
+    document.body.removeChild(ta);
+  }
+}
+
+async function saveSingleMessage(msgId, btn) {
+  const row = document.getElementById(msgId);
+  if (!row) return;
+  const bubble = row.querySelector('.msg-bubble');
+  const content = bubble ? bubble.textContent : '';
+  const origHTML = btn.innerHTML;
+
+  try {
+    await apiSaveObsidian(bookName || '未命名', [{ role: 'assistant', content }]);
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;stroke:currentColor"><polyline points="20 6 9 17 4 12"/></svg>';
+    btn.classList.add('done');
+    toast('已保存到 Obsidian');
+    setTimeout(() => { btn.innerHTML = origHTML; btn.classList.remove('done'); }, 1500);
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function enterSaveMode() {
+  saveMode = true;
+  $('#chat-messages').classList.add('save-mode');
+  $('#btn-save-toggle').textContent = '确认保存';
+  $('#btn-save-toggle').style.fontWeight = '600';
+  document.querySelectorAll('.msg-sel input').forEach(cb => cb.checked = false);
+  toast('勾选要保存的消息，完成后点击「确认保存」或按 Esc 退出');
+}
+
+function exitSaveMode() {
+  saveMode = false;
+  $('#chat-messages').classList.remove('save-mode');
+  $('#btn-save-toggle').textContent = '保存到 Obsidian';
+  $('#btn-save-toggle').style.fontWeight = '500';
+  document.querySelectorAll('.msg-sel input').forEach(cb => cb.checked = false);
+}
+
+async function confirmMultiSave() {
+  const checked = document.querySelectorAll('.msg-sel input:checked');
+  if (checked.length === 0) {
+    toast('请先勾选要保存的消息');
+    return;
+  }
+
+  const messages = [];
+  checked.forEach(cb => {
+    const msgId = cb.dataset.msg;
+    const row = document.getElementById(msgId);
+    if (!row) return;
+    const role = row.classList.contains('user') ? 'user' : 'assistant';
+    const bubble = row.querySelector('.msg-bubble');
+    if (bubble) {
+      messages.push({ role, content: bubble.textContent });
+    }
+  });
+
+  try {
+    await apiSaveObsidian(bookName || '未命名', messages);
+    toast('已保存 ' + messages.length + ' 条消息到 Obsidian', 'success');
+    exitSaveMode();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function showThinking(text) {
+  const bar = $('#thinking-bar');
+  $('#thinking-text').textContent = text;
+  bar.classList.add('visible');
+}
+
+function hideThinking() {
+  $('#thinking-bar').classList.remove('visible');
+}
+
+function showContextFullDialog() {
+  $('#context-dialog').classList.add('open');
+  // reset radio selection
+  document.getElementById('ctx-opt-slide').classList.add('selected');
+  document.getElementById('ctx-opt-reset').classList.remove('selected');
+  document.querySelector('#ctx-opt-slide input').checked = true;
+}
+
+function hideContextFullDialog() {
+  $('#context-dialog').classList.remove('open');
+}
+
+function showConfirmDialog(msg, onConfirm) {
+  const dialog = $('#confirm-dialog');
+  $('#confirm-msg').textContent = msg;
+  dialog.classList.add('open');
+
+  const okBtn = $('#confirm-ok');
+  const cancelBtn = $('#confirm-cancel');
+
+  const cleanup = () => {
+    dialog.classList.remove('open');
+    okBtn.removeEventListener('click', handler);
+    cancelBtn.removeEventListener('click', cleanup);
+  };
+
+  function handler() {
+    cleanup();
+    if (onConfirm) onConfirm();
+  }
+
+  okBtn.addEventListener('click', handler);
+  cancelBtn.addEventListener('click', cleanup);
+}
+
+// ======================================================================
+// I. SETTINGS PANEL LOGIC
+// ======================================================================
+function setupSettingsPanel() {
+  const slider = $('#ctx-slider');
+  const number = $('#ctx-number');
+  const current = $('#ctx-current');
+
+  slider.addEventListener('input', () => {
+    number.value = slider.value;
+    current.textContent = slider.value;
+    contextLimit = parseInt(slider.value);
+    saveSettings();
+    updateContextBar();
+    updateWarningBar();
+    updateSendButtonState();
+  });
+
+  number.addEventListener('input', () => {
+    let val = parseInt(number.value) || DEFAULT_CONTEXT_LIMIT;
+    val = clamp(val, 8000, 128000);
+    slider.value = val;
+    number.value = val;
+    current.textContent = val;
+    contextLimit = val;
+    saveSettings();
+    updateContextBar();
+    updateWarningBar();
+    updateSendButtonState();
+  });
+
+  // chinese only toggle
+  $('#chinese-only').addEventListener('change', function() {
+    chineseOnly = this.checked;
+    saveSettings();
+    renderReaderArea();
+    recalcChapterTokens();
+    toast(chineseOnly ? '已切换为仅中文' : '已切换为显示全文');
+  });
+
+  // auto-slide / ask-on-80 mutual exclusion
+  $('#auto-slide').addEventListener('change', function() {
+    autoSlideWindow = this.checked;
+    if (autoSlideWindow) {
+      askOn80 = false;
+      $('#ask-on-80').checked = false;
+      $('#ask-on-80').disabled = true;
+    } else {
+      $('#ask-on-80').disabled = false;
+    }
+    saveSettings();
+  });
+
+  $('#ask-on-80').addEventListener('change', function() {
+    askOn80 = this.checked;
+    if (askOn80) {
+      autoSlideWindow = false;
+      $('#auto-slide').checked = false;
+      $('#auto-slide').disabled = true;
+    } else {
+      $('#auto-slide').disabled = false;
+    }
+    saveSettings();
+  });
+
+  $('#slide-rounds').addEventListener('change', function() {
+    slideRounds = clamp(parseInt(this.value) || DEFAULT_SLIDE_ROUNDS, 2, 20);
+    this.value = slideRounds;
+    saveSettings();
+  });
+
+  $('#vault-path').addEventListener('change', function() {
+    vaultPath = this.value || DEFAULT_VAULT_PATH;
+    saveSettings();
+  });
+
+  $('#system-prompt').addEventListener('change', function() {
+    customSystemPrompt = this.value;
+    saveSettings();
+  });
+
+  $('#btn-restore').addEventListener('click', () => {
+    contextLimit = DEFAULT_CONTEXT_LIMIT;
+    chineseOnly = true;
+    autoSlideWindow = true;
+    askOn80 = false;
+    slideRounds = DEFAULT_SLIDE_ROUNDS;
+    vaultPath = DEFAULT_VAULT_PATH;
+    customSystemPrompt = '';
+    applySettingsToForm();
+    saveSettings();
+    updateContextBar();
+    updateWarningBar();
+    updateSendButtonState();
+    renderReaderArea();
+    toast('已恢复默认设置');
+  });
+
+  // modal open/close
+  $('#btn-settings').addEventListener('click', () => {
+    applySettingsToForm();
+    $('#settings-modal').classList.add('open');
+  });
+  $('#modal-close').addEventListener('click', () => $('#settings-modal').classList.remove('open'));
+  $('#settings-modal').addEventListener('click', e => {
+    if (e.target === $('#settings-modal')) $('#settings-modal').classList.remove('open');
+  });
+}
+
+// ======================================================================
+// J. COLUMN DIVIDER SETUP
+// ======================================================================
+function setupDivider(did, lid, rid) {
+  const d = document.getElementById(did), l = document.getElementById(lid), r = document.getElementById(rid);
+  if (!d || !l || !r) return;
+  let down, sx, sl, sr;
+
+  // restore saved widths
+  const savedLW = localStorage.getItem('col-width-' + lid);
+  const savedRW = localStorage.getItem('col-width-' + rid);
+  if (savedLW) l.style.width = savedLW + 'px';
+  if (savedRW) r.style.width = savedRW + 'px';
+
+  d.addEventListener('mousedown', e => {
+    down = true; d.classList.add('dragging');
+    sx = e.clientX; sl = l.getBoundingClientRect().width; sr = r.getBoundingClientRect().width;
+    document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!down) return;
+    const dx = e.clientX - sx, nl = sl + dx, nr = sr - dx;
+    const lmin = lid === 'sidebar' ? 180 : 250, rmin = rid === 'reader' ? 250 : 300;
+    if (nl >= lmin && nr >= rmin) { l.style.width = nl + 'px'; r.style.width = nr + 'px'; }
+  });
+  document.addEventListener('mouseup', () => {
+    if (!down) return; down = false;
+    d.classList.remove('dragging'); document.body.style.cursor = ''; document.body.style.userSelect = '';
+    // save widths
+    localStorage.setItem('col-width-' + lid, parseInt(l.style.width));
+    localStorage.setItem('col-width-' + rid, parseInt(r.style.width));
+  });
+}
+
+// ======================================================================
+// K. APPLICATION INITIALIZATION
+// ======================================================================
+async function init() {
+  // 1. Load settings from localStorage
+  loadSettings();
+  applySettingsToForm();
+
+  // 2. Restore font size
+  globalFontSize = parseInt(localStorage.getItem('readerFontSize')) || FONT_DEFAULT;
+  applyFontSize(globalFontSize);
+
+  // 3. Load history
+  renderHistoryList();
+
+  // 4. Load Ollama models
+  const models = await apiLoadOllamaModels();
+  const select = $('#model-select');
+  select.innerHTML = '';
+
+  if (models.length > 0) {
+    const ollamaGroup = document.createElement('optgroup');
+    ollamaGroup.label = '本地 Ollama';
+    models.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = 'ollama:' + m.name;
+      opt.textContent = m.name;
+      ollamaGroup.appendChild(opt);
+    });
+    select.appendChild(ollamaGroup);
+    currentModel = 'ollama:' + models[0].name;
+    // update ollama default display
+    $('#ctx-ollama-default').textContent = models[0].context_length || 32768;
+  } else {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'Ollama 未运行';
+    opt.disabled = true;
+    select.appendChild(opt);
+    toast('⚠️ Ollama 未运行，请先执行 ollama serve', 'error');
+  }
+
+  // DeepSeek options
+  const dsGroup = document.createElement('optgroup');
+  dsGroup.label = 'DeepSeek (云端)';
+  ['deepseek-v4-flash', 'deepseek-chat'].forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = 'deepseek:' + name;
+    opt.textContent = name;
+    dsGroup.appendChild(opt);
+  });
+  select.appendChild(dsGroup);
+
+  if (currentModel) {
+    select.value = currentModel;
+  }
+
+  // 5. Model change handler
+  select.addEventListener('change', function() {
+    handleModelChange(this.value);
+  });
+
+  // 6. Update status bar
+  updateStatusBar();
+
+  // 7. Set up column dividers
+  setupDivider('divider-1', 'sidebar', 'reader');
+  setupDivider('divider-2', 'reader', 'chat');
+
+  // 8. Load conversation from localStorage
+  const savedConv = loadConversation();
+  if (savedConv.length > 0) {
+    conversationHistory = savedConv;
+    renderConversation(savedConv);
+    // calculate conversation tokens
+    const allText = savedConv.map(m => m.content).join('\n');
+    apiCountTokens(allText, currentModel).then(t => {
+      conversationTokens = t;
+      updateContextBar();
+      updateWarningBar();
+    });
+  }
+
+  // 9. Set up all event listeners
+  setupEventListeners();
+
+  // 10. Update context bar
+  updateContextBar();
+  updateWarningBar();
+  updateSendButtonState();
+
+  console.log('📚 EPUB 阅读器已就绪');
+}
+
+function setupEventListeners() {
+  // File upload
+  $('#btn-upload').addEventListener('click', () => {
+    $('#file-input').click();
+  });
+  $('#file-input').addEventListener('change', function() {
+    if (this.files && this.files[0]) {
+      handleFileSelected(this.files[0]);
+      this.value = '';
+    }
+  });
+
+  // Chapter search
+  const searchDebounced = debounce((query) => {
+    renderChapterList(query);
+  }, 150);
+  $('#chapter-search').addEventListener('input', function() {
+    searchDebounced(this.value);
+  });
+
+  // Send button
+  $('#btn-send').addEventListener('click', sendMessage);
+
+  // Reset button
+  $('#btn-reset').addEventListener('click', resetConversation);
+
+  // Save mode toggle
+  $('#btn-save-toggle').addEventListener('click', () => {
+    if (!saveMode) {
+      enterSaveMode();
+    } else {
+      confirmMultiSave();
+    }
+  });
+
+  // Warning bar close buttons
+  $('#close-warn-40k').addEventListener('click', () => {
+    warning40kDismissed = true;
+    $('#warning-40k').style.display = 'none';
+  });
+  $('#close-warn-85').addEventListener('click', () => {
+    warning85Dismissed = true;
+    $('#warning-85').style.display = 'none';
+  });
+
+  // Clear history + reset current book
+  $('#clear-history').addEventListener('click', () => {
+    if (confirm('确定要清空所有内容吗？（包括当前书籍和对话）')) {
+      clearHistory();
+      resetBookState();
+    }
+  });
+
+  // Font controls
+  $('#font-smaller').addEventListener('click', () => adjustFont(-1));
+  $('#font-larger').addEventListener('click', () => adjustFont(1));
+
+  // Settings panel
+  setupSettingsPanel();
+
+  // Context dialog
+  document.querySelectorAll('#context-dialog .radio-option').forEach(opt => {
+    opt.addEventListener('click', function() {
+      document.querySelectorAll('#context-dialog .radio-option').forEach(o => o.classList.remove('selected'));
+      this.classList.add('selected');
+      this.querySelector('input').checked = true;
+    });
+  });
+
+  $('#ctx-dialog-later').addEventListener('click', hideContextFullDialog);
+  $('#ctx-dialog-confirm').addEventListener('click', () => {
+    const selected = document.querySelector('#context-dialog input[name="ctx-action"]:checked');
+    if (selected && selected.value === 'slide') {
+      autoSlideWindow = true;
+      askOn80 = false;
+      $('#auto-slide').checked = true;
+      $('#ask-on-80').checked = false;
+      $('#ask-on-80').disabled = true;
+    }
+    hideContextFullDialog();
+    resetConversation();
+  });
+  $('#context-dialog').addEventListener('click', e => {
+    if (e.target === $('#context-dialog')) hideContextFullDialog();
+  });
+
+  // Confirm dialog close
+  $('#confirm-dialog').addEventListener('click', e => {
+    if (e.target === $('#confirm-dialog')) $('#confirm-dialog').classList.remove('open');
+  });
+
+  // Global keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    // Escape: close modals / exit save mode
+    if (e.key === 'Escape') {
+      if ($('#context-dialog').classList.contains('open')) {
+        hideContextFullDialog();
+      } else if ($('#confirm-dialog').classList.contains('open')) {
+        $('#confirm-dialog').classList.remove('open');
+      } else if ($('#settings-modal').classList.contains('open')) {
+        $('#settings-modal').classList.remove('open');
+      } else if (saveMode) {
+        exitSaveMode();
+        toast('已退出保存模式');
+      }
+      return;
+    }
+
+    // Ctrl/Cmd + =: font larger
+    if ((e.ctrlKey || e.metaKey) && e.key === '=') {
+      e.preventDefault();
+      adjustFont(1);
+    }
+
+    // Ctrl/Cmd + -: font smaller
+    if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+      e.preventDefault();
+      adjustFont(-1);
+    }
+  });
+
+  // Textarea auto-resize
+  $('#chat-input').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+  });
+
+  // Enter 发送 / Shift+Enter 换行（IME 组合输入时不触发）
+  $('#chat-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+      const val = this.value.trim();
+      // 有内容且不在流式输出中才发送，否则保留换行
+      if (val && !isStreaming && selectedChapters.size > 0) {
+        e.preventDefault();
+        sendMessage();
+      }
+      // 空输入或无章节时，Enter 正常换行
+    }
+  });
+}
+
+// Font size management
+function applyFontSize(size) {
+  globalFontSize = size;
+  localStorage.setItem('readerFontSize', size);
+  document.documentElement.style.setProperty('--content-font-size', size + 'px');
+}
+
+function adjustFont(delta) {
+  applyFontSize(clamp(globalFontSize + delta, FONT_MIN, FONT_MAX));
+}
+
+// ======================================================================
+// STARTUP
+// ======================================================================
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
