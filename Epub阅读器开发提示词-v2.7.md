@@ -2,6 +2,22 @@
 
 > 更新：2026-07-16
 >
+> v2.7.2 变更（消息气泡右上角图标优化 — Gemini 风格）：
+> 1. **Toolbar 移入气泡内部**：复制/保存图标从气泡上方移至右上角 (`top:8px; right:10px`)，不再遮挡
+> 2. **图标缩小**：按钮 30×30→24×24px，SVG 16→13px，更精致
+> 3. **右侧强制预留空间**：`.msg-bubble` padding-right 16→72px，文字永不进入图标区域
+> 4. **毛玻璃背景**：toolbar 背景 `rgba(255,255,255,0.82)` + `blur(10px)`，轻量阴影
+> 5. **修复流式更新图标丢失**：`updateMessageContent` innerHTML 后恢复 toolbar，AI 回复栏图标不再消失
+>
+> v2.7.1 变更（代码校验修复）：
+> 1. **跨浏览器 dots 动画**：CSS `@keyframes dots` + `content` 仅 Chrome 支持 → 改为 JS `setInterval` 驱动
+> 2. **死变量清理**：移除未使用的 `--warning-yellow` / `--danger-red`
+> 3. **重复调用修复**：`checkContextAndHandle()` 内移除冗余 `updateWarningBar()` 调用
+>
+> Git: `d526dc7` → `62210d7` → `e2e9f10` → `cf994bd` → (v2.7.2)
+>
+> ---
+>
 > v2.7 变更（CSS 全面重构 — Apple 风格 + 橙色主题）：
 > 1. **Apple 设计语言**：背景体系改为 #f5f5f7 / 纯白，毛玻璃顶栏，胶囊输入框，视网膜多层阴影
 > 2. **橙色主题保留**：#e8500c 主色不变，新增 --accent-bg / --accent-ring 等辅助变量

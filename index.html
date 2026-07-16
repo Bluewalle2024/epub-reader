@@ -345,7 +345,7 @@ body.drag-resizing, body.drag-resizing * {
 .msg-row.user      { align-self: flex-end; }
 .msg-row.assistant { align-self: flex-start; }
 .msg-bubble {
-  padding: 12px 16px; border-radius: var(--radius-lg); line-height: 1.65;
+  padding: 12px 72px 12px 16px; border-radius: var(--radius-lg); line-height: 1.65;
   position: relative; word-wrap: break-word;
 }
 .msg-row.user .msg-bubble {
@@ -389,23 +389,26 @@ body.drag-resizing, body.drag-resizing * {
 .save-mode .msg-sel { display: block; }
 .save-mode .msg-row { margin-left: 30px; }
 
-/* ---- Message Toolbar ---- */
+/* ---- Message Toolbar — 右上角悬浮，Gemini 风格 ---- */
 .msg-toolbar {
-  position: absolute; top: -36px; right: 0; display: flex; gap: 2px;
+  position: absolute; top: 8px; right: 10px; display: flex; gap: 0;
   opacity: 0; transition: opacity 0.15s;
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: var(--radius-md); padding: 3px; box-shadow: var(--shadow-md);
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: 8px; padding: 2px; box-shadow: var(--shadow-sm);
+  z-index: 2;
 }
 .msg-row:hover .msg-toolbar { opacity: 1; }
 .toolbar-btn {
-  width: 30px; height: 30px; display: flex; align-items: center;
+  width: 24px; height: 24px; display: flex; align-items: center;
   justify-content: center; border: none; background: none;
-  border-radius: var(--radius-sm); cursor: pointer;
+  border-radius: 6px; cursor: pointer;
   color: var(--text-tertiary); transition: all 0.12s;
 }
-.toolbar-btn:hover { background: var(--bg); color: var(--accent); }
+.toolbar-btn:hover { background: rgba(0,0,0,0.06); color: var(--text-primary); }
 .toolbar-btn.done { color: var(--accent); }
-.toolbar-btn svg { width: 16px; height: 16px; stroke: currentColor; }
+.toolbar-btn svg { width: 13px; height: 13px; stroke: currentColor; }
 
 /* ---- Input Area — 胶囊输入框 ---- */
 #chat-input-area { padding: 14px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
@@ -1333,7 +1336,7 @@ function addMessage(role, content, msgId) {
       '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
       '</button>';
   }
-  row.appendChild(toolbar);
+  bubble.appendChild(toolbar);
 
   // toolbar events
   row.querySelector('.btn-copy').addEventListener('click', function(e) {
@@ -1358,11 +1361,15 @@ function updateMessageContent(msgId, content, isMarkdown = false) {
   if (!row) return;
   const bubble = row.querySelector('.msg-bubble');
   if (!bubble) return;
+  // 保存 toolbar，innerHTML 替换后会丢失
+  const toolbar = bubble.querySelector('.msg-toolbar');
   if (isMarkdown && typeof marked !== 'undefined') {
     bubble.innerHTML = marked.parse(content);
   } else {
     bubble.innerHTML = content.replace(/\n/g, '<br>');
   }
+  // 恢复 toolbar 到气泡右上角
+  if (toolbar) bubble.appendChild(toolbar);
   const container = $('#chat-messages');
   container.scrollTop = container.scrollHeight;
 }
@@ -1950,7 +1957,7 @@ function copyMessage(msgId, btn) {
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(() => {
-      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;stroke:currentColor"><polyline points="20 6 9 17 4 12"/></svg>';
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;stroke:currentColor"><polyline points="20 6 9 17 4 12"/></svg>';
       btn.classList.add('done');
       toast('已复制到剪贴板');
       setTimeout(() => { btn.innerHTML = origHTML; btn.classList.remove('done'); }, 1500);
