@@ -8,7 +8,6 @@
 /* ===================================================================== */
 /* EPUB Reader — Screenshot-accurate Design                              */
 /* ===================================================================== */
-@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
 
 :root{
   --page-bg:#f2f2f7;--panel-bg:#fff;--accent:#859d94;--accent-hover:#6e867d;
@@ -1487,19 +1486,10 @@ function recalcChapterTokensDebounced(delay = 400) {
 }
 
 function handleChapterToggle(idx, checked) {
-  const prevDisplayed = new Set(selectedChapters);
   if (checked) {
     selectedChapters.add(idx);
   } else {
     selectedChapters.delete(idx);
-  }
-  const nowDisplayed = new Set(selectedChapters);
-
-  // check if displayed chapters changed (affects reader content)
-  const displayedChanged = !setsEqual(prevDisplayed, nowDisplayed);
-
-  if (displayedChanged) {
-    renderReaderArea();
   }
 
   const approxTokens = [...selectedChapters].reduce((sum, i) => sum + (chapters[i].tokens_approx || 0), 0);
@@ -1508,17 +1498,11 @@ function handleChapterToggle(idx, checked) {
   updateContextBar();
   updateWarningBar();
 
-  // 然后异步精确计算
+  // 异步精确计算
   recalcChapterTokensDebounced();
 
   // sync select-all checkbox state
   syncSelectAllAfterToggle();
-}
-
-function setsEqual(a, b) {
-  if (a.size !== b.size) return false;
-  for (const v of a) { if (!b.has(v)) return false; }
-  return true;
 }
 
 // 章节勾选变化后同步全选框状态（不重新渲染整个列表）
