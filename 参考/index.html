@@ -4,407 +4,186 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EPUB 阅读器</title>
-<style>
-/* ===================================================================== */
-/* EPUB Reader — Screenshot-accurate Design                              */
-/* ===================================================================== */
-@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
+<style>/* Frost Design System — Soft Frost */
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap');
+:root{--bg-root:#f2f2f7;--bg-elevated:#fff;--bg-glass:rgba(255,255,255,0.72);--bg-glass-strong:rgba(255,255,255,0.88);--bg-reading:#fafaf8;--accent:#859d94;--accent-hover:#6e867d;--accent-bg:rgba(133,157,148,0.09);--accent-ring:rgba(133,157,148,0.15);--text-primary:#1d1d1f;--text-secondary:#6e6e73;--text-tertiary:#aeaeb2;--text-quaternary:#c7c7cc;--border:rgba(0,0,0,0.06);--border-strong:rgba(0,0,0,0.10);--border-focus:#859d94;--msg-user-bg:#859d94;--msg-user-text:#fff;--msg-ai-bg:rgba(133,157,148,0.05);--msg-ai-border:rgba(0,0,0,0.04);--green:#34c759;--yellow:#f59e0b;--red:#ef4444;--red-bg:rgba(239,68,68,0.06);--bg-chat-input:rgba(133,157,148,0.04);--shadow-sm:0 1px 3px rgba(0,0,0,0.04);--shadow-md:0 4px 20px rgba(0,0,0,0.04),0 1px 3px rgba(0,0,0,0.03);--shadow-lg:0 8px 40px rgba(0,0,0,0.08);--shadow-glass:0 0 0 0.5px rgba(0,0,0,0.04),0 2px 8px rgba(0,0,0,0.04),0 8px 40px rgba(0,0,0,0.06);--radius-sm:6px;--radius-md:10px;--radius-lg:14px;--radius-xl:18px;--radius-2xl:22px;--content-font-size:18px;--font-ui:'Inter',-apple-system,BlinkMacSystemFont,'SF Pro Text','PingFang SC',sans-serif;--font-reading:'Source Serif 4','PingFang SC',Georgia,serif;--ease-apple:cubic-bezier(0.25,0.1,0.25,1);--bg:#f2f2f7;--bg-sidebar:rgba(255,255,255,0.72);--bg-card:#fff;--font:'Inter',-apple-system,BlinkMacSystemFont,'SF Pro Text','PingFang SC',sans-serif}
 
-:root{
-  --page-bg:#f2f2f7;--panel-bg:#fff;--accent:#859d94;--accent-hover:#6e867d;
-  --accent-light:#dce5e0;--accent-bg:rgba(133,157,148,0.09);--accent-ring:rgba(133,157,148,0.15);
-  --text-primary:#1d1d1f;--text-secondary:#6e6e73;--text-tertiary:#aeaeb2;--text-quaternary:#c7c7cc;
-  --border:rgba(0,0,0,0.06);--border-strong:rgba(0,0,0,0.10);--bg-input:rgba(0,0,0,0.04);
-  --bg-hover:rgba(0,0,0,0.03);--bg-active:rgba(133,157,148,0.09);
-  --bg-reading:#fafaf8;--msg-user-bg:#859d94;--msg-user-text:#fff;
-  --msg-ai-bg:rgba(133,157,148,0.05);--msg-ai-border:rgba(0,0,0,0.04);--green:#34c759;--yellow:#f59e0b;--red:#ef4444;--red-bg:rgba(239,68,68,0.06);
-  --radius-panel:18px;--radius-md:14px;--radius-sm:10px;--radius-xs:6px;
-  --shadow-panel:0 4px 20px rgba(0,0,0,0.04),0 1px 3px rgba(0,0,0,0.03);
-  --shadow-lg:0 8px 40px rgba(0,0,0,0.08);
-  --font-ui:'Inter',-apple-system,BlinkMacSystemFont,'SF Pro Text','PingFang SC',sans-serif;
-  --font-reading:'Source Serif 4','PingFang SC',Georgia,serif;
-  --content-font-size:18px;--ease:cubic-bezier(0.25,0.1,0.25,1);
-}
-
-/* ===================================================================== */
-/* Reset                                                                  */
-/* ===================================================================== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{
-  height:100%;font-family:var(--font-ui);background:var(--page-bg);
-  color:var(--text-primary);overflow:hidden;
-  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
-}
-::-webkit-scrollbar{width:6px;height:6px}
+html,body{height:100%;font-family:var(--font-ui);background:var(--bg-root);color:var(--text-primary);overflow:hidden;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.15);border-radius:100px}
 ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.25)}
 ::selection{background:rgba(133,157,148,0.18)}
-
 #app{display:flex;flex-direction:column;height:100vh}
 
-/* ===================================================================== */
-/* Main Layout — no header, panels fill full height                       */
-/* ===================================================================== */
-#main{display:flex;flex:1;overflow:hidden;padding:12px;gap:10px;background:var(--page-bg)}
+/* Header - compact glass */
+#header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg-glass-strong);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-bottom:0.5px solid var(--border);flex-shrink:0;gap:12px;z-index:10}
+#header-left{font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap}
+#header-right{display:flex;align-items:center;gap:8px}
+.model-badge-group{display:flex;align-items:center;gap:6px}
+.model-badge{font-family:var(--font-ui);font-size:11px;font-weight:500;padding:4px 12px;border-radius:16px;cursor:pointer;border:none;background:rgba(0,0,0,0.04);color:var(--text-secondary);white-space:nowrap;transition:all 0.15s var(--ease-apple)}
+.model-badge:hover{background:var(--accent-bg);color:var(--accent)}
+.model-badge.active,.model-badge.active.local-active{background:#fff;color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,0.06);font-weight:600}
+#model-select{display:none}
+.btn-settings-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;border-radius:50%;cursor:pointer;color:var(--text-tertiary);transition:all 0.15s}
+.btn-settings-icon:hover{background:rgba(0,0,0,0.04);color:var(--text-primary)}
+.btn-settings-icon svg{width:16px;height:16px}
+.btn-header{font-family:var(--font-ui);font-size:12px;font-weight:500;color:var(--text-secondary);background:none;border:none;border-radius:5px;cursor:pointer;padding:4px 10px;transition:all 0.15s;white-space:nowrap}
+.btn-header:hover{background:rgba(0,0,0,0.04);color:var(--text-primary)}
 
-/* ===================================================================== */
-/* Sidebar                                                                */
-/* ===================================================================== */
-#sidebar{
-  width:260px;min-width:200px;flex-shrink:0;
-  background:rgba(255,255,255,0.72);backdrop-filter:blur(40px) saturate(180%);
-  -webkit-backdrop-filter:blur(40px) saturate(180%);
-  border-radius:var(--radius-panel);border:0.5px solid rgba(255,255,255,0.30);
-  box-shadow:0 0 0 0.5px rgba(0,0,0,0.04),0 2px 8px rgba(0,0,0,0.04),0 8px 40px rgba(0,0,0,0.06);
-  display:flex;flex-direction:column;overflow:hidden;
-}
-#sidebar-content{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
+/* Main Layout */
+#main{display:flex;flex:1;overflow:hidden;padding:12px;gap:8px;background:var(--bg-root)}
 
-/* Book info card */
-.book-card{
-  display:flex;align-items:center;gap:12px;padding:12px;
-  background:var(--bg-input);border-radius:var(--radius-md);
-}
-.book-cover{
-  width:44px;height:44px;border-radius:var(--radius-md);background:var(--accent-light);
-  display:flex;align-items:center;justify-content:center;font-size:22px;
-  flex-shrink:0;color:var(--accent);
-}
-.book-meta-col{display:flex;flex-direction:column;gap:2px;min-width:0}
-.book-card-title{font-size:14px;font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.book-card-author{font-size:12px;color:var(--text-tertiary)}
-
-/* Upload button */
-.btn-upload{
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  width:100%;height:38px;font-family:var(--font-ui);font-size:14px;font-weight:500;
-  color:var(--text-primary);background:var(--panel-bg);border:1px solid var(--border);
-  border-radius:var(--radius-md);cursor:pointer;transition:all 0.2s var(--ease);
-}
-.btn-upload svg{color:var(--text-secondary)}
-.btn-upload:hover{background:var(--bg-hover);border-color:#D1D5DB}
-.btn-upload:disabled{color:var(--text-tertiary);cursor:not-allowed;opacity:0.6}
-
-/* Section title */
-.section-title{
-  display:flex;align-items:center;justify-content:space-between;
-  font-size:12px;font-weight:600;color:var(--text-tertiary);
-  text-transform:none;letter-spacing:0;padding:0;
-}
-.section-title .clear-link{font-size:12px;font-weight:400;color:var(--text-tertiary);cursor:pointer}
+/* Sidebar */
+#sidebar{width:260px;min-width:180px;flex-shrink:0;background:var(--bg-glass);backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border-radius:var(--radius-xl);border:0.5px solid rgba(255,255,255,0.30);box-shadow:var(--shadow-glass);display:flex;flex-direction:column;overflow:hidden}
+#sidebar-content{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:12px}
+.btn-upload{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-ui);font-size:11px;font-weight:600;color:var(--text-primary);background:var(--bg-elevated);border:0.5px solid var(--border);border-radius:16px;cursor:pointer;padding:6px 14px;transition:all 0.15s var(--ease-apple)}
+.btn-upload:hover{background:var(--accent-bg);color:var(--accent)}
+.btn-upload:disabled{color:var(--text-tertiary);cursor:not-allowed}
+.section-title{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;padding:0 4px}
+.section-title .clear-link{font-size:11px;font-weight:400;color:var(--text-tertiary);cursor:pointer}
 .section-title .clear-link:hover{color:var(--red)}
-
-/* History list */
-.history-list{display:flex;flex-direction:column;gap:2px}
-.history-item{
-  display:flex;align-items:center;gap:10px;padding:8px 10px;
-  border-radius:var(--radius-sm);cursor:pointer;font-size:13px;
-  color:var(--text-primary);transition:background 0.2s var(--ease);
-}
-.history-item:hover{background:var(--bg-hover)}
-.history-item.active{background:var(--bg-active)}
+.history-list{display:flex;flex-direction:column;gap:1px}
+.history-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--radius-md);cursor:pointer;font-size:12px;color:var(--text-primary);transition:background 0.15s}
+.history-item:hover{background:rgba(0,0,0,0.03)}
+.history-item.active{background:var(--accent-bg);color:var(--accent)}
 .history-item .book-info{flex:1;min-width:0}
 .history-item .book-name{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.history-item .book-meta{font-size:12px;color:var(--text-tertiary)}
-.history-item .btn-delete{
-  width:22px;height:22px;border:none;background:none;border-radius:50%;
-  cursor:pointer;font-size:11px;color:var(--text-tertiary);
-  display:flex;align-items:center;justify-content:center;opacity:0;transition:all 0.2s var(--ease);
-}
+.history-item .book-meta{font-size:11px;color:var(--text-quaternary)}
+.history-item .btn-delete{width:22px;height:22px;border:none;background:none;border-radius:50%;cursor:pointer;font-size:11px;color:var(--text-tertiary);display:flex;align-items:center;justify-content:center;opacity:0;transition:all 0.15s}
 .history-item:hover .btn-delete{opacity:1}
 .history-item .btn-delete:hover{color:var(--red);background:var(--red-bg)}
-
-/* Search */
-.search-wrap{position:relative;display:flex;align-items:center}
-.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-tertiary);pointer-events:none}
-.search-input{
-  width:100%;height:36px;padding:0 32px 0 32px;font-family:var(--font-ui);font-size:13px;
-  border:none;border-radius:var(--radius-md);background:var(--bg-input);
-  color:var(--text-primary);outline:none;transition:background 0.2s var(--ease);
-}
-.search-input:focus{background:rgba(0,0,0,0.06)}
-.search-input::placeholder{color:var(--text-tertiary)}
-.search-clear-btn{
-  position:absolute;right:6px;top:50%;transform:translateY(-50%);
-  width:20px;height:20px;border:none;background:none;cursor:pointer;
-  color:var(--text-tertiary);font-size:13px;line-height:1;border-radius:50%;padding:0;display:none;
-}
-
-/* Chapter list */
+.current-book{font-size:11px;color:var(--text-tertiary);font-weight:600;padding:8px 4px 4px;border-top:0.5px solid var(--border)}
+.search-input{width:100%;padding:7px 10px;font-family:var(--font-ui);font-size:12px;border:none;border-radius:var(--radius-md);background:rgba(0,0,0,0.04);color:var(--text-primary);outline:none;transition:background 0.15s}
+.search-input:focus{background:rgba(0,0,0,0.06);box-shadow:none}
+.search-input::placeholder{color:var(--text-quaternary)}
 .chapter-list{display:flex;flex-direction:column;gap:1px;flex:1;overflow-y:auto;min-height:120px}
-.chapter-item{
-  display:flex;align-items:center;gap:10px;padding:8px 10px;height:40px;
-  border-radius:var(--radius-sm);cursor:pointer;font-size:13px;
-  transition:background 0.2s var(--ease);
-}
-.chapter-item:hover{background:var(--bg-hover)}
-/* Chapter status indicator — screenshot style */
-.ch-indicator{
-  width:18px;height:18px;border-radius:50%;flex-shrink:0;position:relative;
-  border:2px solid #D1D5DB;transition:all 0.2s var(--ease);
-}
-.ch-indicator .ch-dot{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:6px;height:6px;border-radius:50%;background:var(--text-tertiary)}
-.chapter-item input[type=checkbox]{display:none}
-.chapter-item:has(input:checked) .ch-indicator{background:var(--accent);border-color:var(--accent)}
-.chapter-item:has(input:checked) .ch-indicator::after{
-  content:'';position:absolute;left:4px;top:2px;width:6px;height:10px;
-  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);
-}
-/* Select-all row special styling */
-#select-all-row .ch-indicator{border-color:var(--accent)}
-#select-all-row:has(input:checked) .ch-indicator{background:var(--accent);border-color:var(--accent)}
-.chapter-item .chapter-title{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-primary)}
-.chapter-jump{cursor:pointer}.chapter-jump:hover{color:var(--accent)}
-.chapter-item.viewing{background:var(--accent-bg);box-shadow:inset 2px 0 0 var(--accent)}
-.chapter-item .chapter-meta{font-size:11px;color:var(--text-tertiary);flex-shrink:0}
+.chapter-item{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:var(--radius-md);cursor:pointer;font-size:12px;transition:background 0.12s}
+.chapter-item:hover{background:rgba(0,0,0,0.03)}
+.chapter-item input[type=checkbox]{appearance:none;width:18px;height:18px;border:1.5px solid var(--border-strong);border-radius:50%;cursor:pointer;flex-shrink:0;position:relative;transition:all 0.15s var(--ease-apple)}
+.chapter-item input[type=checkbox]:checked{background:var(--accent);border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
+.chapter-item input[type=checkbox]:checked::after{content:'';position:absolute;left:5px;top:2.5px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.chapter-item .chapter-title{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--text-secondary)}
+.chapter-item .chapter-meta{font-size:10px;color:var(--text-quaternary);flex-shrink:0}
 .no-results{font-size:12px;color:var(--text-tertiary);text-align:center;padding:20px 0}
 .search-highlight{background:rgba(133,157,148,0.2);color:var(--text-primary);padding:1px 2px;border-radius:2px}
+#sidebar-footer{padding:10px 14px;border-top:0.5px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+.summary-bar{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text-secondary);transition:color 0.3s;padding:6px 10px;background:rgba(0,0,0,0.02);border-radius:var(--radius-sm)}
+.summary-bar.warning{color:var(--yellow);background:rgba(245,158,11,0.06)}
+.summary-bar.danger{color:var(--red);background:var(--red-bg)}
+.summary-bar .warn-icon{font-size:13px;font-weight:700}
+.btn-save{font-family:var(--font-ui);font-size:11px;font-weight:600;color:var(--text-secondary);background:var(--bg-elevated);border:0.5px solid var(--border);border-radius:16px;cursor:pointer;padding:5px 14px;transition:all 0.15s var(--ease-apple)}
+.btn-save:hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent)}
 
-/* Sidebar footer */
-#sidebar-footer{
-  padding:12px 16px;border-top:0.5px solid var(--border);flex-shrink:0;
-  display:flex;flex-direction:column;gap:10px;
-}
-.sidebar-stats{display:flex;flex-direction:column;gap:6px}
-.sidebar-stats-row{display:flex;align-items:center;justify-content:space-between;font-size:12px}
-.sidebar-stats-row:first-child{color:var(--text-secondary)}
-.sidebar-stats-row:last-child{color:var(--text-tertiary);font-size:11px}
-#sidebar-footer .progress-bar-wrap{margin:2px 0}
-#sidebar-footer .progress-bar{width:100%;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
-#sidebar-footer .progress-fill{height:100%;border-radius:2px;background:var(--accent);transition:width 0.3s;width:0%}
-.summary-bar.warning{color:var(--yellow)}.summary-bar.danger{color:var(--red)}
-/* ===================================================================== */
-/* Dividers                                                               */
-/* ===================================================================== */
-.divider{
-  width:4px;background:transparent;cursor:col-resize;
-  flex-shrink:0;position:relative;z-index:5;
-}
-.divider::after{
-  content:'';position:absolute;left:1.5px;top:40px;bottom:40px;
-  width:1px;background:var(--border);border-radius:1px;
-}
+/* Dividers */
+.divider{width:3px;background:transparent;cursor:col-resize;flex-shrink:0}
+.divider::after{content:'';position:absolute;left:0;top:20px;bottom:20px;width:1px;background:var(--border)}
 .divider:hover,.divider.dragging{background:var(--accent-ring)}
 .divider:hover::after,.divider.dragging::after{background:var(--accent)}
 body.drag-resizing,body.drag-resizing *{user-select:none;-webkit-user-select:none}
 
-/* ===================================================================== */
-/* Reader                                                                 */
-/* ===================================================================== */
-#reader{
-  width:400px;min-width:280px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;
-  background:rgba(255,255,255,0.88);backdrop-filter:blur(40px) saturate(180%);
-  -webkit-backdrop-filter:blur(40px) saturate(180%);
-  border-radius:var(--radius-panel);border:0.5px solid rgba(255,255,255,0.30);
-  box-shadow:0 0 0 0.5px rgba(0,0,0,0.04),0 2px 8px rgba(0,0,0,0.04),0 8px 40px rgba(0,0,0,0.06);
-}
-#reader-header{
-  display:flex;align-items:center;justify-content:space-between;padding:8px 12px;flex-shrink:0;
-  background:rgba(255,255,255,0.88);backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);border-bottom:0.5px solid var(--border);
-}
-#reader-chapter-nav{font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
+/* Reader */
+#reader{width:400px;min-width:250px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;background:var(--bg-elevated);border-radius:var(--radius-xl);border:0.5px solid rgba(255,255,255,0.30);box-shadow:var(--shadow-glass)}
+#reader-header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;gap:4px;flex-shrink:0;background:var(--bg-glass-strong);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:0.5px solid var(--border)}
 .font-control{display:flex;border:0.5px solid var(--border);border-radius:16px;overflow:hidden}
-.font-btn{
-  font-family:var(--font-ui);font-size:11px;font-weight:600;color:var(--text-secondary);
-  background:transparent;border:none;cursor:pointer;padding:3px 12px;transition:all 0.15s var(--ease);
-}
+.font-btn{font-family:var(--font-ui);font-size:11px;font-weight:600;color:var(--text-secondary);background:transparent;border:none;cursor:pointer;padding:3px 12px;transition:all 0.15s var(--ease-apple)}
 .font-btn:first-child{border-right:0.5px solid var(--border)}
 .font-btn:hover{background:var(--accent-bg);color:var(--accent)}
-
-/* Reader content */
-#reader-content{font-size:var(--content-font-size)}
-#chat-messages .msg-bubble{font-size:var(--content-font-size)}
-#chat-input-area textarea{font-size:var(--content-font-size)}
-#reader-content{
-  flex:1;overflow-y:auto;padding:60px 80px;background:var(--bg-reading);line-height:1.85;
-}
-#reader-content p{
-  font-family:var(--font-reading);font-size:var(--content-font-size);
-  line-height:1.8;text-align:justify;text-indent:2em;margin-bottom:24px;color:var(--text-primary);
-}
+.font-btn:active{background:var(--accent-bg)}
+#reader-content,.msg-bubble,#chat-input-area textarea{font-size:var(--content-font-size)}
+#reader-content{flex:1;overflow-y:auto;padding:32px 16px 48px;background:var(--bg-reading)}
+#reader-content p{font-family:var(--font-reading);font-size:var(--content-font-size);line-height:1.85;text-align:justify;text-indent:2em;margin-bottom:1.4em;max-width:720px;margin-left:auto;margin-right:auto}
 #reader-content p:first-of-type{text-indent:0}
-.reader-chapter-title{
-  font-family:var(--font-ui);font-size:22px;font-weight:600;color:var(--text-primary);
-  margin-bottom:32px;display:block;text-align:center;
-}
-.reader-chapter-divider{
-  text-align:center;color:var(--text-secondary);margin:40px auto;
-  font-size:14px;font-weight:500;display:flex;align-items:center;gap:14px;
-}
-.reader-chapter-divider::before,.reader-chapter-divider::after{content:'';flex:1;height:1px;background:var(--border)}
-
-/* Empty states */
-.empty-state{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  height:100%;color:var(--text-tertiary);gap:12px;pointer-events:none;
-}
+.reader-chapter-title{font-family:var(--font-ui);font-size:26px;font-weight:700;color:var(--text-primary);letter-spacing:-0.02em;margin-bottom:32px;display:block;border-bottom:none;padding-bottom:0}
+.reader-chapter-divider{text-align:center;color:var(--text-quaternary);margin:32px auto;font-size:13px;letter-spacing:4px;width:30%;display:flex;align-items:center;gap:12px}
+.reader-chapter-divider::before,.reader-chapter-divider::after{content:'';flex:1;height:0.5px;background:var(--border)}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-tertiary);gap:12px}
 .empty-state .empty-icon{font-size:36px;opacity:0.3}
 .empty-state .empty-text{font-size:14px}
 
-/* ===================================================================== */
-/* Chat Panel                                                             */
-/* ===================================================================== */
-#chat{
-  flex:1;min-width:300px;display:flex;flex-direction:column;overflow:hidden;
-  background:rgba(255,255,255,0.72);backdrop-filter:blur(40px) saturate(180%);
-  -webkit-backdrop-filter:blur(40px) saturate(180%);
-  border-radius:var(--radius-panel);border:0.5px solid rgba(255,255,255,0.30);
-  box-shadow:0 0 0 0.5px rgba(0,0,0,0.04),0 2px 8px rgba(0,0,0,0.04),0 8px 40px rgba(0,0,0,0.06);
-}
-
-/* Chat status bar */
-#chat-status{padding:14px 16px;border-bottom:0.5px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:8px}
-#chat-status-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.status-left{display:flex;align-items:center;gap:6px}
-.ai-avatar{width:24px;height:24px;border-radius:6px;background:#bcc9c3;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.ai-avatar svg{width:14px;height:14px}
-.chat-loaded-indicator{font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:4px}
-.chat-loaded-indicator::before{display:none}
-.chat-loaded-indicator.loaded::before{display:none}
-.chat-loaded-indicator.empty::before{display:none}
-.chat-header-actions{display:flex;align-items:center;gap:8px}
-
-/* Model badge group — segmented control */
-.model-badge-group{display:flex;align-items:center;gap:0;background:var(--panel-bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:2px;overflow:hidden}
-.model-badge{font-family:var(--font-ui);font-size:12px;font-weight:500;padding:4px 12px;border-radius:var(--radius-sm);cursor:pointer;border:none;background:transparent;color:var(--text-secondary);transition:all 0.15s var(--ease)}
-.model-badge:hover{color:var(--text-primary)}
-.model-badge.active{background:var(--accent);color:#fff;font-weight:600}
-
-/* Settings icon */
-.btn-settings-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;border-radius:6px;cursor:pointer;color:var(--text-tertiary);transition:all 0.2s var(--ease)}
-.btn-settings-icon:hover{background:var(--bg-input);color:var(--text-primary)}
-.btn-settings-icon svg{width:16px;height:16px}
-
-/* Progress bar */
+/* Chat */
+#chat{flex:1;min-width:300px;display:flex;flex-direction:column;overflow:hidden;background:var(--bg-glass);backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border-radius:var(--radius-xl);border:0.5px solid rgba(255,255,255,0.30);box-shadow:var(--shadow-glass)}
+#chat-status{padding:12px 16px;border-bottom:0.5px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:6px}
+#chat-status-top{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text-secondary)}
+#chat-status-top .book-model{font-weight:600;color:var(--text-primary);font-size:13px}
 .progress-bar-wrap{display:flex;align-items:center;gap:8px}
-.progress-bar{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-bar{flex:1;height:4px;background:rgba(0,0,0,0.06);border-radius:2px;overflow:hidden}
 .progress-fill{height:100%;border-radius:2px;transition:width 0.3s,background 0.3s;width:0%}
-.progress-fill.green{background:var(--accent)}.progress-fill.yellow{background:var(--yellow)}.progress-fill.red{background:var(--red)}.progress-fill.black{background:var(--text-primary)}
+.progress-fill.green{background:var(--green)}.progress-fill.yellow{background:var(--yellow)}.progress-fill.red{background:var(--red)}.progress-fill.black{background:var(--text-primary)}
 .progress-pct{font-size:11px;color:var(--text-tertiary);font-weight:500;min-width:32px;text-align:right}
-.btn-reset{font-family:var(--font-ui);font-size:11px;color:var(--text-tertiary);background:none;border:none;cursor:pointer;padding:2px 8px;border-radius:12px;white-space:nowrap;display:none;transition:all 0.2s var(--ease)}
+.btn-reset{font-family:var(--font-ui);font-size:11px;color:var(--text-tertiary);background:none;border:none;cursor:pointer;padding:2px 8px;border-radius:12px;white-space:nowrap;display:none;transition:all 0.15s}
 .btn-reset:hover{color:var(--accent);background:var(--accent-bg)}
 .btn-reset.visible{display:inline}
-
-/* Warning bars */
 .warning-bar{font-size:11px;color:var(--yellow);padding:6px 10px;background:rgba(245,158,11,0.06);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:space-between}
 .warning-bar .close-warn{cursor:pointer;font-size:13px;color:var(--text-tertiary);background:none;border:none;line-height:1;padding:0 2px}
 
 /* Messages */
-#chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:24px;position:relative}
+#chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
 #chat-messages .empty-state{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);height:auto}
 .msg-system{text-align:center;font-size:11px;color:var(--text-tertiary);padding:4px 0}
-.msg-row{display:flex;flex-direction:column;max-width:88%;position:relative;animation:msgFadeIn 0.25s ease-out}
+.msg-row{display:flex;flex-direction:column;max-width:82%;position:relative;animation:msgFadeIn 0.25s ease-out}
 @keyframes msgFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .msg-row.user{align-self:flex-end}.msg-row.assistant{align-self:flex-start}
-.msg-bubble{padding:12px 14px;border-radius:10px;line-height:1.6;position:relative;word-wrap:break-word}
-.msg-row.user .msg-bubble{background:var(--msg-user-bg);color:var(--msg-user-text);border:none;border-bottom-right-radius:4px;box-shadow:0 1px 4px rgba(133,157,148,0.15)}
-.msg-row.assistant .msg-bubble{background:var(--msg-ai-bg);color:var(--text-primary);border:0.5px solid var(--msg-ai-border);border-bottom-left-radius:4px;text-align:justify}
+.msg-bubble{padding:10px 16px;border-radius:var(--radius-lg);line-height:1.65;position:relative;word-wrap:break-word;font-size:13px}
+.msg-row.user .msg-bubble{background:var(--msg-user-bg);color:var(--msg-user-text);border:none;border-bottom-right-radius:6px;box-shadow:none}
+.msg-row.assistant .msg-bubble{background:var(--msg-ai-bg);border:none;border-bottom-left-radius:6px;box-shadow:none;color:var(--text-primary)}
 .msg-bubble p{margin:0 0 6px}.msg-bubble p:last-child{margin-bottom:0}
 .msg-bubble strong{font-weight:600}.msg-bubble em{font-style:italic}
 .msg-bubble ul,.msg-bubble ol{margin:6px 0;padding-left:20px}
 .msg-bubble code{background:rgba(0,0,0,0.06);padding:2px 6px;border-radius:4px;font-size:0.9em}
-.msg-bubble pre{background:rgba(0,0,0,0.04);padding:10px 12px;border-radius:var(--radius-sm);overflow-x:auto;font-size:12px;margin:6px 0}
+.msg-bubble pre{background:rgba(0,0,0,0.04);padding:10px 12px;border-radius:var(--radius-md);overflow-x:auto;font-size:12px;margin:6px 0}
 .msg-bubble blockquote{border-left:3px solid var(--accent);padding-left:12px;margin:6px 0;color:var(--text-secondary)}
 .msg-row.streaming .msg-bubble::after{content:'▍';animation:blink 1s step-end infinite;color:var(--text-tertiary);margin-left:2px}
 @keyframes blink{50%{opacity:0}}
 
-/* Save mode */
+/* Save Mode */
 .msg-sel{display:none;position:absolute;left:-28px;top:50%;transform:translateY(-50%);cursor:pointer}
 .msg-sel input{display:none}
-.msg-sel .cb-box{display:flex;align-items:center;justify-content:center;width:20px;height:20px;border:2px solid var(--text-tertiary);border-radius:50%;transition:all 0.2s var(--ease);background:var(--panel-bg)}
-.msg-sel input:checked+.cb-box{background:var(--accent);border-color:var(--accent)}
+.msg-sel .cb-box{display:flex;align-items:center;justify-content:center;width:20px;height:20px;border:1.5px solid var(--text-tertiary);border-radius:50%;transition:all 0.15s;background:transparent}
+.msg-sel input:checked+.cb-box{background:var(--accent);border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
 .msg-sel input:checked+.cb-box::after{content:'';width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-1px}
 .msg-sel .cb-box:hover{border-color:var(--accent)}
-.save-mode .msg-sel{display:block}.save-mode .msg-row{margin-left:28px}
+.save-mode .msg-sel{display:block}
+.save-mode .msg-row{margin-left:28px}
 
-/* Message toolbar */
-.msg-toolbar{position:absolute;bottom:-30px;right:0;display:flex;gap:2px;opacity:0;transition:opacity 0.15s;background:var(--panel-bg);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:2px;box-shadow:0 2px 6px rgba(0,0,0,0.06);z-index:5}
-.msg-row:hover .msg-toolbar,.msg-toolbar:hover{opacity:1}
-.msg-row.user{margin-right:36px}
-.toolbar-btn{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:none;background:none;border-radius:var(--radius-xs);cursor:pointer;color:#1d1d1f;transition:all 0.15s}
-.toolbar-btn svg{stroke:currentColor;width:14px;height:14px}
-.toolbar-btn:hover{background:var(--bg-input);color:var(--accent)}.toolbar-btn.done{color:var(--accent)}
+/* Message Toolbar */
+.msg-toolbar{position:absolute;top:6px;right:8px;display:flex;gap:2px;opacity:0;transition:opacity 0.15s;background:rgba(255,255,255,0.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:0.5px solid var(--border);border-radius:8px;padding:2px;box-shadow:var(--shadow-sm);z-index:2}
+.msg-row:hover .msg-toolbar{opacity:1}
+.toolbar-btn{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:none;background:none;border-radius:6px;cursor:pointer;color:var(--text-tertiary);transition:all 0.12s}
+.toolbar-btn:hover{background:var(--accent-bg);color:var(--accent)}
+.toolbar-btn.done{color:var(--accent)}
+.toolbar-btn svg{width:14px;height:14px}
 
-/* Thinking indicator */
-#thinking-bar{display:none;align-items:center;gap:6px;padding:6px 16px;font-size:12px;color:var(--text-tertiary);flex-shrink:0}
-#thinking-bar.visible{display:flex}
-.dot-pulse{font-family:monospace;width:18px}
-
-/* Input area */
-#chat-input-area{padding:12px 16px 10px;border-top:0.5px solid var(--border);flex-shrink:0}
-.input-wrap{position:relative;margin-bottom:8px}
-.input-wrap textarea{width:100%;min-height:40px;max-height:120px;padding:10px 50px 10px 16px;font-family:var(--font-ui);font-size:14px;line-height:1.5;border:none;border-radius:20px;background:#f0f2f1;color:var(--text-primary);resize:none;outline:none;transition:background 0.2s var(--ease)}
-.input-wrap textarea:focus{background:#e8eae9}
-.input-wrap textarea::placeholder{color:#9ea3a1}
-.btn-send{position:absolute;right:4px;bottom:4px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:none;background:var(--accent);border-radius:50%;cursor:pointer;color:#fff;transition:all 0.2s var(--ease)}
-.btn-send:hover{background:var(--accent-hover);transform:scale(1.05)}
-.btn-send svg{width:18px;height:18px}
-.btn-send:disabled{background:#ccc;cursor:not-allowed;transform:none}
-.btn-send svg{width:15px;height:15px}
-.btn-send .spinner{display:none;width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.6s linear infinite}
+/* Input Area */
+#chat-input-area{padding:12px 14px;border-top:0.5px solid var(--border);flex-shrink:0}
+.input-wrap{position:relative}
+.input-wrap textarea{width:100%;min-height:40px;max-height:140px;padding:10px 42px 10px 14px;font-family:var(--font-ui);font-size:13px;line-height:1.5;border:1px solid transparent;border-radius:20px;background:var(--bg-chat-input);color:var(--text-primary);resize:none;outline:none;transition:all 0.2s var(--ease-apple)}
+.input-wrap textarea:focus{background:rgba(133,157,148,0.03);border-color:var(--accent-ring);box-shadow:0 0 0 3px var(--accent-bg)}
+.input-wrap textarea::placeholder{color:var(--text-quaternary)}
+.btn-send{position:absolute;right:5px;bottom:5px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:none;background:var(--accent);border-radius:50%;cursor:pointer;color:#fff;transition:all 0.15s var(--ease-apple);box-shadow:0 2px 6px rgba(133,157,148,0.25)}
+.btn-send:hover{transform:scale(1.05);box-shadow:0 4px 12px rgba(133,157,148,0.35)}
+.btn-send:disabled{background:var(--text-tertiary);cursor:not-allowed;transform:none;box-shadow:none}
+.btn-send svg{width:14px;height:14px}
+.btn-send .spinner{display:none;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.6s linear infinite}
 .btn-send.spinning svg{display:none}.btn-send.spinning .spinner{display:block}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* Chat input footer */
-.chat-input-footer{display:flex;align-items:center;justify-content:flex-end;gap:8px}
-#save-mode-hint{font-size:11px;color:var(--accent);display:none;flex:1}
-.save-mode #save-mode-hint{display:inline}
-.btn-save-footer{
-  font-family:var(--font-ui);font-size:12px;font-weight:500;color:var(--text-secondary);
-  background:var(--panel-bg);border:1px solid var(--border);border-radius:var(--radius-md);
-  cursor:pointer;padding:5px 12px;transition:all 0.2s var(--ease);
-  display:flex;align-items:center;gap:5px;white-space:nowrap;
-}
-.btn-save-footer svg{color:var(--text-tertiary)}
-.btn-save-footer:hover{background:var(--bg-hover);color:var(--accent);border-color:var(--accent)}
-.btn-save-footer:hover svg{color:var(--accent)}
-
-/* ===================================================================== */
-/* Toast                                                                  */
-/* ===================================================================== */
-#toast-container{
-  position:fixed;top:16px;right:16px;z-index:1000;
-  display:flex;flex-direction:column;gap:8px;
-}
-.toast{
-  padding:12px 18px;border-radius:var(--radius-md);
-  background:var(--panel-bg);border:1px solid var(--border);
-  box-shadow:var(--shadow-lg);font-size:13px;color:var(--text-primary);
-  animation:slideIn 0.3s ease-out;max-width:340px;
-  backdrop-filter:blur(20px);
-}
+/* Toast */
+#toast-container{position:fixed;top:16px;right:16px;z-index:1000;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 18px;border-radius:var(--radius-lg);background:var(--bg-elevated);border:0.5px solid var(--border);box-shadow:var(--shadow-lg);font-size:13px;color:var(--text-primary);animation:slideIn 0.3s ease-out;max-width:340px;backdrop-filter:blur(20px)}
 .toast.error{border-color:var(--red);color:var(--red)}
 .toast.success{border-color:var(--green);color:var(--green)}
 @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
 
-/* ===================================================================== */
-/* Settings Modal                                                         */
-/* ===================================================================== */
-.modal-overlay{
-  display:none;position:fixed;inset:0;
-  background:rgba(0,0,0,0.25);z-index:2000;
-  align-items:center;justify-content:center;backdrop-filter:blur(4px);
-}
+/* Settings Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.25);z-index:2000;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 .modal-overlay.open{display:flex}
-.modal{
-  background:var(--panel-bg);border-radius:var(--radius-panel);
-  box-shadow:var(--shadow-lg);width:420px;max-height:90vh;
-  overflow-y:auto;display:flex;flex-direction:column;
-}
-.modal-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:18px 20px 14px;border-bottom:1px solid var(--border);
-}
-.modal-header h3{font-size:16px;font-weight:600}
-.modal-close{
-  width:28px;height:28px;border:none;background:none;
-  border-radius:50%;cursor:pointer;font-size:16px;
-  color:var(--text-tertiary);display:flex;align-items:center;
-  justify-content:center;transition:all 0.2s var(--ease);
-}
-.modal-close:hover{background:var(--bg-input);color:var(--text-primary)}
+.modal{background:var(--bg-elevated);border-radius:var(--radius-xl);box-shadow:var(--shadow-lg);width:420px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:0.5px solid var(--border)}
+.modal-header h3{font-size:17px;font-weight:600;letter-spacing:-0.2px}
+.modal-close{width:28px;height:28px;border:none;background:none;border-radius:50%;cursor:pointer;font-size:16px;color:var(--text-tertiary);display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.modal-close:hover{background:rgba(0,0,0,0.04);color:var(--text-primary)}
 .modal-body{padding:16px 20px 20px;display:flex;flex-direction:column;gap:18px}
 .setting-group{display:flex;flex-direction:column;gap:6px}
 .setting-group label{font-size:12px;font-weight:600;color:var(--text-primary)}
@@ -412,132 +191,95 @@ body.drag-resizing,body.drag-resizing *{user-select:none;-webkit-user-select:non
 .setting-row{display:flex;align-items:center;justify-content:space-between}
 .setting-row span{font-size:13px;color:var(--text-primary)}
 input[type=range]{width:100%;accent-color:var(--accent)}
-input[type=number]{
-  width:64px;padding:5px 8px;font-family:var(--font-ui);font-size:12px;
-  border:1px solid var(--border);border-radius:var(--radius-sm);
-  background:var(--panel-bg);color:var(--text-primary);outline:none;text-align:center;
-}
+input[type=number]{width:64px;padding:5px 8px;font-family:var(--font-ui);font-size:12px;border:0.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-root);color:var(--text-primary);outline:none;text-align:center}
 input[type=number]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring)}
-input[type=text].setting-path{
-  width:100%;padding:8px 12px;font-family:var(--font-ui);font-size:12px;
-  border:1px solid var(--border);border-radius:var(--radius-sm);
-  background:var(--panel-bg);color:var(--text-primary);outline:none;
-}
+input[type=text].setting-path{width:100%;padding:8px 12px;font-family:var(--font-ui);font-size:12px;border:0.5px solid var(--border);border-radius:var(--radius-md);background:var(--bg-root);color:var(--text-primary);outline:none}
 input[type=text].setting-path:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring)}
-textarea.setting-prompt{
-  width:100%;padding:8px 12px;font-family:var(--font-ui);font-size:12px;
-  border:1px solid var(--border);border-radius:var(--radius-sm);
-  background:var(--panel-bg);color:var(--text-primary);outline:none;
-  resize:vertical;line-height:1.5;
-}
+textarea.setting-prompt{width:100%;padding:8px 12px;font-family:var(--font-ui);font-size:12px;border:0.5px solid var(--border);border-radius:var(--radius-md);background:var(--bg-root);color:var(--text-primary);outline:none;resize:vertical;line-height:1.5}
 textarea.setting-prompt:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring)}
-
-/* Toggle switch */
 .toggle-sw{position:relative;width:42px;height:24px;flex-shrink:0}
 .toggle-sw input{display:none}
-.toggle-sw .track{
-  position:absolute;inset:0;background:#d1d1d6;
-  border-radius:12px;cursor:pointer;transition:background 0.2s;
-}
+.toggle-sw .track{position:absolute;inset:0;background:#d1d1d6;border-radius:12px;cursor:pointer;transition:background 0.2s}
 .toggle-sw input:checked+.track{background:var(--accent)}
-.toggle-sw .track::after{
-  content:'';position:absolute;top:2px;left:2px;
-  width:20px;height:20px;background:#fff;border-radius:50%;
-  transition:transform 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.12);
-}
+.toggle-sw .track::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.12)}
 .toggle-sw input:checked+.track::after{transform:translateX(18px)}
-
-.btn-restore{
-  font-family:var(--font-ui);font-size:12px;font-weight:500;
-  color:var(--text-secondary);background:none;
-  border:1px solid var(--border);border-radius:var(--radius-sm);
-  cursor:pointer;padding:7px 16px;align-self:flex-start;
-  transition:all 0.2s var(--ease);
-}
-.btn-restore:hover{background:var(--bg-input);color:var(--accent);border-color:var(--accent)}
-
-/* Confirm dialog */
+.btn-restore{font-family:var(--font-ui);font-size:12px;font-weight:500;color:var(--text-secondary);background:none;border:0.5px solid var(--border);border-radius:var(--radius-md);cursor:pointer;padding:7px 16px;align-self:flex-start;transition:all 0.15s}
+.btn-restore:hover{background:rgba(0,0,0,0.03);color:var(--accent);border-color:var(--accent)}
 #confirm-dialog .modal{width:380px}
 #confirm-dialog .confirm-msg{font-size:14px;color:var(--text-primary);line-height:1.6}
 .btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
-.btn-primary,.btn-secondary{
-  font-family:var(--font-ui);font-size:13px;font-weight:500;
-  padding:7px 18px;border-radius:var(--radius-sm);cursor:pointer;
-  border:none;transition:all 0.2s var(--ease);
-}
+.btn-primary,.btn-secondary{font-family:var(--font-ui);font-size:13px;font-weight:500;padding:7px 18px;border-radius:var(--radius-md);cursor:pointer;border:none;transition:all 0.15s}
 .btn-primary{background:var(--accent);color:#fff}
 .btn-primary:hover{background:var(--accent-hover)}
-.btn-secondary{
-  background:var(--bg-input);color:var(--text-secondary);
-  border:1px solid var(--border);
-}
-.btn-secondary:hover{background:var(--border);color:var(--text-primary)}
+.btn-secondary{background:rgba(0,0,0,0.03);color:var(--text-secondary);border:0.5px solid var(--border)}
+.btn-secondary:hover{background:rgba(0,0,0,0.06);color:var(--text-primary)}
 
-/* ===================================================================== */
-/* Responsive                                                             */
-/* ===================================================================== */
 @media(max-width:900px){#sidebar{width:200px}#reader{width:300px}}
 </style>
 </head>
 <body>
 
+<!-- Hidden file input (Safari: position trick, not display:none) -->
 <input type="file" accept=".epub" id="file-input" style="position:absolute;width:1px;height:1px;clip:rect(0,0,0,0);">
 
 <div id="app">
+  <!-- Header -->
+  <header id="header">
+    <div id="header-left">EPUB 阅读器</div>
+    <div id="header-right">
+      <div class="model-badge-group">
+        <button class="model-badge active local-active" id="badge-local">本地</button>
+        <button class="model-badge" id="badge-cloud">云端</button>
+      </div>
+      <select id="model-select" style="display:none">
+        <option value="">加载模型中...</option>
+      </select>
+      <button class="btn-settings-icon" id="btn-settings" title="设置">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main -->
   <div id="main">
+    <!-- Sidebar -->
     <aside id="sidebar">
       <div id="sidebar-content">
-        <!-- Book info card -->
-        <div class="book-card" id="book-card" style="display:none">
-          <div class="book-cover" id="book-cover">📖</div>
-          <div class="book-meta-col">
-            <div class="book-card-title" id="book-card-title"></div>
-            <div class="book-card-author" id="book-card-author"></div>
-          </div>
-        </div>
-        <button class="btn-upload" id="btn-upload">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          打开 EPUB
-        </button>
+        <button class="btn-upload" id="btn-upload">打开 EPUB</button>
         <div id="history-section">
           <div class="section-title"><span>历史记录</span><span class="clear-link" id="clear-history">清空</span></div>
           <div class="history-list" id="history-list"></div>
         </div>
-        <div class="search-wrap">
-          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" class="search-input" id="chapter-search" placeholder="搜索章节...">
-          <button class="search-clear-btn" id="search-clear">✕</button>
+        <div class="current-book" id="current-book" style="display:none"></div>
+        <div style="position:relative">
+          <input type="text" class="search-input" id="chapter-search" placeholder="搜索章节..." style="padding-right:28px">
+          <button id="search-clear" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:20px;height:20px;border:none;background:none;cursor:pointer;color:var(--text-tertiary);font-size:14px;line-height:1;border-radius:50%;padding:0">✕</button>
         </div>
         <label class="chapter-item" id="select-all-row" style="display:none">
-          <span class="ch-indicator"><span class="ch-dot"></span></span>
+          <input type="checkbox" id="select-all-checkbox">
           <span class="chapter-title">全选</span>
         </label>
         <div class="chapter-list" id="chapter-list"></div>
       </div>
       <div id="sidebar-footer" style="display:none">
-        <div class="sidebar-stats">
-          <div class="sidebar-stats-row">
-            <span id="summary-count">已选 0/0 章</span>
-            <span id="summary-tokens">~0 tokens</span>
-          </div>
-          <div class="sidebar-stats-row">
-            <span>阅读进度</span>
-            <span id="reading-progress-pct">0%</span>
-          </div>
-          <div class="progress-bar-wrap">
-            <div class="progress-bar"><div class="progress-fill green" id="sidebar-progress-fill"></div></div>
-          </div>
+        <div class="summary-bar" id="summary-bar">
+          <span id="summary-count">已选 0 章</span>
+          <span id="summary-tokens">0<span class="warn-icon"></span></span>
         </div>
+        <button class="btn-save" id="btn-save-toggle">保存到 Obsidian</button>
       </div>
     </aside>
 
     <div class="divider" id="divider-1"></div>
 
+    <!-- Reader -->
     <section id="reader">
       <div id="reader-header">
-        <span id="reader-chapter-nav"></span>
         <div class="font-control">
-          <button class="font-btn" id="font-smaller">A−</button>
+          <button class="font-btn" id="font-smaller">A-</button>
           <button class="font-btn" id="font-larger">A+</button>
         </div>
       </div>
@@ -548,23 +290,11 @@ textarea.setting-prompt:focus{border-color:var(--accent);box-shadow:0 0 0 3px va
 
     <div class="divider" id="divider-2"></div>
 
+    <!-- Chat -->
     <section id="chat">
       <div id="chat-status">
         <div id="chat-status-top">
-          <span class="status-left"><span class="ai-avatar" id="ai-avatar"><svg viewBox="0 0 18 18" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="3"/><path d="M2 17c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></span><span class="chat-loaded-indicator" id="chat-loaded-text">尚未加载</span></span>
-          <div class="chat-header-actions">
-            <select id="model-select" style="display:none"><option value="">加载模型中...</option></select>
-            <div class="model-badge-group" id="chat-badge-group">
-              <button class="model-badge active" id="chat-badge-local">本地</button>
-              <button class="model-badge" id="chat-badge-cloud">云端</button>
-            </div>
-            <button class="btn-settings-icon" id="btn-settings" title="设置">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-              </svg>
-            </button>
-          </div>
+          <span class="book-model" id="chat-book-model">尚未加载书籍</span>
         </div>
         <div class="progress-bar-wrap">
           <div class="progress-bar"><div class="progress-fill green" id="progress-fill"></div></div>
@@ -589,19 +319,13 @@ textarea.setting-prompt:focus{border-color:var(--accent);box-shadow:0 0 0 3px va
 
       <div id="chat-input-area">
         <div class="input-wrap">
-          <textarea id="chat-input" placeholder="输入你的想法..." rows="3"></textarea>
+          <textarea id="chat-input" placeholder="输入你的问题..." rows="4"></textarea>
           <button class="btn-send" id="btn-send" title="发送">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
             <div class="spinner"></div>
           </button>
         </div>
-        <div class="chat-input-footer">
-          <span id="save-mode-hint">已进入保存模式 — 勾选消息后点击「确认保存」或按 Esc 退出</span>
-          <button class="btn-save-footer" id="btn-save-toggle-2">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-            保存到 Obsidian
-          </button>
-        </div>
+        <span id="save-mode-hint">已进入保存模式 — 勾选消息后点击「确认保存」或按 Esc 退出</span>
       </div>
     </section>
   </div>
@@ -660,7 +384,6 @@ textarea.setting-prompt:focus{border-color:var(--accent);box-shadow:0 0 0 3px va
 
 <div id="toast-container"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
 // ======================================================================
 // A. CONSTANTS & CONFIG
@@ -718,7 +441,7 @@ let recalcTimer = null;  // debounce timer for recalcChapterTokens
 // ======================================================================
 // C. UTILITY FUNCTIONS
 // ======================================================================
-function toast(msg, type = 'info', duration = 1500) {
+function toast(msg, type = 'info', duration = 2500) {
   const c = document.getElementById('toast-container');
   const t = document.createElement('div');
   t.className = 'toast ' + (type === 'info' ? '' : type);
@@ -864,27 +587,22 @@ async function apiSearchDuckDuckGo(query) {
 function apiChatStream(body, { onToken, onTokensUsed, onDone, onError }) {
   const controller = new AbortController();
   activeAbortController = controller;
-  // manual timeout — avoids AbortSignal.any() compat issues
-  const timeoutId = setTimeout(() => { controller.abort(); onError('请求超时（5分钟）'); }, 300000);
 
   (async () => {
     try {
-      console.log('apiChatStream: sending request to', API_BASE + '/api/chat', 'model:', body.model);
       const resp = await fetch(API_BASE + '/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-        signal: controller.signal
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(300000)])
       });
-      clearTimeout(timeoutId);
+
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({}));
-        console.error('apiChatStream: HTTP error', resp.status, err);
         onError(err.error || err.detail || '对话请求失败 (HTTP ' + resp.status + ')');
         return;
       }
 
-      console.log('apiChatStream: response OK, starting to read stream');
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = ''; // cross-chunk line buffer
@@ -922,7 +640,6 @@ function apiChatStream(body, { onToken, onTokensUsed, onDone, onError }) {
       }
       onDone();
     } catch (err) {
-      clearTimeout(timeoutId);
       if (err.name === 'AbortError') return;
       onError('网络连接失败，请检查服务是否运行');
     }
@@ -996,14 +713,14 @@ function loadSettings() {
 
 function applySettingsToForm() {
   const maxCtx = getContextMax();
-  const sl = $('#ctx-slider'), nu = $('#ctx-number'), cu = $('#ctx-current');
-  const co = $('#chinese-only'), vp = $('#vault-path'), sp = $('#system-prompt');
-  if (sl) { sl.max = maxCtx; sl.value = contextLimit; }
-  if (nu) { nu.max = maxCtx; nu.value = contextLimit; }
-  if (cu) cu.textContent = contextLimit;
-  if (co) co.checked = chineseOnly;
-  if (vp) vp.value = vaultPath;
-  if (sp) sp.value = customSystemPrompt;
+  $('#ctx-slider').max = maxCtx;
+  $('#ctx-slider').value = contextLimit;
+  $('#ctx-number').max = maxCtx;
+  $('#ctx-number').value = contextLimit;
+  $('#ctx-current').textContent = contextLimit;
+  $('#chinese-only').checked = chineseOnly;
+  $('#vault-path').value = vaultPath;
+  $('#system-prompt').value = customSystemPrompt;
 }
 
 function saveConversation() {
@@ -1074,12 +791,11 @@ function renderChapterList(filterQuery = '') {
     if (selectedChapters.has(i)) visibleSelected++;
     const checked = selectedChapters.has(i);
     const tokens = ch.tokens !== undefined ? ch.tokens : (ch.tokens_approx || 0);
-    html += '<div class="chapter-item" data-idx="' + i + '">' +
-      '<span class="ch-indicator"><span class="ch-dot"></span></span>' +
+    html += '<label class="chapter-item">' +
       '<input type="checkbox" data-idx="' + i + '" ' + (checked ? 'checked' : '') + '>' +
-      '<span class="chapter-title chapter-jump" data-idx="' + i + '">' + escapeHtml(ch.title) + '</span>' +
+      '<span class="chapter-title">' + escapeHtml(ch.title) + '</span>' +
       '<span class="chapter-meta">' + formatTokens(tokens) + '</span>' +
-      '</div>';
+      '</label>';
   });
 
   if (visible === 0 && q) {
@@ -1093,30 +809,11 @@ function renderChapterList(filterQuery = '') {
 
   container.innerHTML = html;
 
-  // bind checkbox events — toggle selection only
+  // bind checkbox events
   container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-    cb.addEventListener('change', function(e) {
-      e.stopPropagation();
+    cb.addEventListener('change', function() {
       const idx = parseInt(this.dataset.idx);
       handleChapterToggle(idx, this.checked);
-    });
-  });
-
-  // bind title click — jump to chapter in reader (no selection change)
-  container.querySelectorAll('.chapter-jump').forEach(title => {
-    title.addEventListener('click', function(e) {
-      e.stopPropagation();
-      const idx = parseInt(this.dataset.idx);
-      scrollToChapter(idx);
-    });
-  });
-
-  // bind indicator click — same as checkbox toggle
-  container.querySelectorAll('.ch-indicator').forEach(ind => {
-    ind.addEventListener('click', function(e) {
-      e.stopPropagation();
-      const cb = this.parentElement.querySelector('input[type="checkbox"]');
-      if (cb) { cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); }
     });
   });
 
@@ -1163,25 +860,32 @@ function updateSummaryBar() {
   footer.style.display = 'flex';
   const count = selectedChapters.size;
   const total = chapters.length;
+  const bar = $('#summary-bar');
+  const warnIcon = bar.querySelector('.warn-icon');
 
   $('#summary-count').textContent = '已选 ' + count + '/' + total + ' 章';
-  $('#summary-tokens').textContent = '~' + formatTokens(chapterTokens) + ' tokens';
+  $('#summary-tokens').innerHTML = formatTokens(chapterTokens) + '<span class="warn-icon"></span>';
 
-  // Update reading progress
-  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-  $('#reading-progress-pct').textContent = pct + '%';
-  const sFill = $('#sidebar-progress-fill');
-  if (sFill) { sFill.style.width = pct + '%'; }
+  const remainingForChat = contextLimit - 8000;
+  bar.className = 'summary-bar';
+  bar.querySelector('.warn-icon').textContent = '';
+
+  if (chapterTokens > remainingForChat) {
+    bar.classList.add('danger');
+    bar.querySelector('.warn-icon').textContent = ' ⚠';
+  } else if (chapterTokens > CHAPTER_WARN_LIMIT) {
+    bar.classList.add('warning');
+    bar.querySelector('.warn-icon').textContent = ' ⚠';
+  }
 }
 
 function updateCurrentBookIndicator() {
-  const card = $('#book-card');
-  if (bookName && card) {
-    card.style.display = 'flex';
-    $('#book-card-title').textContent = bookName;
-    // keep cover as-is, just update title
-  } else if (card) {
-    card.style.display = 'none';
+  const el = $('#current-book');
+  if (bookName) {
+    el.style.display = 'block';
+    el.textContent = '当前：《' + bookName + '》';
+  } else {
+    el.style.display = 'none';
   }
 }
 
@@ -1197,9 +901,9 @@ function renderReaderArea() {
   const empty = $('#reader-empty');
   const query = ($('#chapter-search').value || '').trim();
 
-  // Only show empty state when no book is loaded at all
-  if (chapters.length === 0) {
+  if (selectedChapters.size === 0) {
     container.innerHTML = '';
+    // 重新创建 empty state（之前的 innerHTML 可能已清除）
     const emptyEl = document.createElement('div');
     emptyEl.className = 'empty-state';
     emptyEl.id = 'reader-empty';
@@ -1211,48 +915,20 @@ function renderReaderArea() {
   // 移除旧的 empty state（如果存在）
   if (empty) empty.remove();
 
-  // Remember which chapter was visible before re-render
-  const prevSection = container.querySelector('.reader-chapter-section');
-  let prevIdx = -1;
-  if (prevSection) {
-    const sections = container.querySelectorAll('.reader-chapter-section');
-    let bestIdx = -1;
-    sections.forEach(s => {
-      if (s.offsetTop - container.offsetTop <= container.scrollTop + 10) {
-        bestIdx = parseInt(s.dataset.chapterIdx);
-      }
-    });
-    prevIdx = bestIdx;
-  }
-
-  // Render ALL chapters — selection only affects AI context, not reading
+  const selected = [...selectedChapters].sort((a, b) => a - b);
   let html = '';
-  chapters.forEach((ch, idx) => {
-    if (idx > 0) html += '<div class="reader-chapter-divider">───</div>';
-    html += '<div class="reader-chapter-section" data-chapter-idx="' + idx + '">';
+  selected.forEach((idx, i) => {
+    if (i > 0) html += '<div class="reader-chapter-divider">───</div>';
+    const ch = chapters[idx];
     html += '<span class="reader-chapter-title">' + highlightText(escapeHtml(ch.title), query) + '</span>';
     const text = getDisplayText(ch);
     const paragraphs = text.split('\n').filter(p => p.trim());
     paragraphs.forEach(p => {
       html += '<p>' + highlightText(escapeHtml(p), query) + '</p>';
     });
-    html += '</div>';
   });
-
   container.innerHTML = html;
-
-  // Scroll to last visible chapter, not to top
-  if (prevIdx >= 0 && prevIdx < chapters.length) {
-    const target = container.querySelector('[data-chapter-idx="' + prevIdx + '"]');
-    if (target) {
-      container.scrollTop = target.offsetTop - container.offsetTop;
-    } else {
-      container.scrollTop = 0;
-    }
-  } else {
-    container.scrollTop = 0;
-  }
-  updateReaderChapterNav();
+  container.scrollTop = 0;
 }
 
 function addMessage(role, content, msgId) {
@@ -1298,13 +974,13 @@ function addMessage(role, content, msgId) {
   // copy button
   toolbar.innerHTML =
     '<button class="toolbar-btn btn-copy" title="复制" data-msg="' + msgId + '">' +
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
     '</button>';
   // save button (AI messages only)
   if (role === 'assistant') {
     toolbar.innerHTML +=
       '<button class="toolbar-btn btn-save-single" title="保存到 Obsidian" data-msg="' + msgId + '">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
       '</button>';
   }
   bubble.appendChild(toolbar);
@@ -1434,15 +1110,11 @@ function updateSendButtonState() {
 }
 
 function updateStatusBar() {
-  const el = $('#chat-loaded-text');
-  if (el) {
-    if (bookName && chapters.length > 0) {
-      el.textContent = 'AI加载';
-      el.className = 'chat-loaded-indicator loaded';
-    } else {
-      el.textContent = '尚未加载';
-      el.className = 'chat-loaded-indicator empty';
-    }
+  const el = $('#chat-book-model');
+  if (bookName) {
+    el.textContent = '《' + bookName + '》';
+  } else {
+    el.textContent = '尚未加载书籍';
   }
 }
 
@@ -1502,6 +1174,7 @@ function handleChapterToggle(idx, checked) {
     renderReaderArea();
   }
 
+  // 立即用近似值更新 UI（不等 API），提升响应速度
   const approxTokens = [...selectedChapters].reduce((sum, i) => sum + (chapters[i].tokens_approx || 0), 0);
   chapterTokens = approxTokens;
   updateSummaryBar();
@@ -1536,7 +1209,6 @@ function syncSelectAllAfterToggle() {
 }
 
 async function sendMessage() {
-  console.log('sendMessage called, isStreaming:', isStreaming, 'currentModel:', currentModel, 'selectedChapters:', selectedChapters.size);
   if (isStreaming) {
     // stop streaming
     if (activeAbortController) {
@@ -1603,7 +1275,9 @@ async function sendMessage() {
     showThinking('正在搜索...');
     searchResults = await apiSearchDuckDuckGo(question);
     hideThinking();
-    // no results: silently skip, don't clutter the chat
+    if (searchResults.length === 0) {
+      addSystemMessage('未找到相关搜索结果');
+    }
   }
 
   // build messages
@@ -1644,7 +1318,6 @@ async function sendMessage() {
     onToken(content) {
       aiContent += content;
       updateMessageContent(aiMsgId, aiContent, false);
-      if (aiContent.length < 20) console.log('apiChatStream: first token received:', content);
     },
     onTokensUsed(tokens) {
       tokensUsed = tokens;
@@ -1700,8 +1373,9 @@ function resetConversation() {
 }
 
 function getContextMax() {
-  // DeepSeek 全系支持 128K
-  if (currentModel.startsWith('deepseek:')) return 128000;
+  // DeepSeek V4 Flash 支持 128K，不受 48K 限制
+  if (currentModel === 'deepseek:deepseek-v4-flash') return 128000;
+  if (currentModel.startsWith('deepseek:')) return 96000;
   return 48000;
 }
 
@@ -1754,16 +1428,14 @@ async function handleModelChange(newModel) {
 
   currentModel = newModel;
 
-  // Sync chat badges + avatar person color
-  const cbl = $('#chat-badge-local'), cbc = $('#chat-badge-cloud');
-  const avatar = $('#ai-avatar');
-  if (cbl && cbc) {
+  // 同步本地/云端 badge 状态
+  const bl = $('#badge-local');
+  const bc = $('#badge-cloud');
+  if (bl && bc) {
     if (newModel.startsWith('ollama:')) {
-      cbl.classList.add('active'); cbc.classList.remove('active');
-      if (avatar) avatar.querySelector('svg').setAttribute('stroke', '#fff');
+      bl.classList.add('active', 'local-active'); bc.classList.remove('active');
     } else {
-      cbc.classList.add('active'); cbl.classList.remove('active');
-      if (avatar) avatar.querySelector('svg').setAttribute('stroke', '#e8943a');
+      bc.classList.add('active'); bl.classList.remove('active', 'local-active');
     }
   }
 
@@ -1819,10 +1491,8 @@ async function resetBookState() {
   updateSendButtonState();
   saveConversation();
 
-  const bookCard = $('#book-card');
-  if (bookCard) bookCard.style.display = 'none';
+  $('#chat-book-model').textContent = '尚未加载书籍';
   $('#sidebar-footer').style.display = 'none';
-  updateStatusBar();
   toast('已清空所有内容');
 }
 
@@ -1885,7 +1555,7 @@ function applyBookData(data) {
   bookName = data.name || '';
   chapters = data.chapters || [];
   repairLevel = data.repair_level || 0;
-  selectedChapters = new Set();
+  selectedChapters = new Set();  // 默认不选，用户手动勾选
 
   chapterTokens = 0;
   conversationTokens = 0;
@@ -1901,31 +1571,25 @@ function applyBookData(data) {
   renderHistoryList();
   renderReaderArea();
 
-  // Show book card with cover
-  const bookCard = $('#book-card');
-  const bookCover = $('#book-cover');
-  if (bookCard && bookName) {
-    bookCard.style.display = 'flex';
-    $('#book-card-title').textContent = bookName;
-    $('#book-card-author').textContent = chapters.length + ' 章';
-    // Display cover image if available
-    if (data.cover && bookCover) {
-      bookCover.innerHTML = '<img src="' + data.cover + '" style="width:44px;height:44px;border-radius:var(--radius-md);object-fit:cover" alt="封面">';
-    }
-  }
-
+  // 立即用 tokens_approx 显示近似 token 数（不等异步 API）
   chapterTokens = [...selectedChapters].reduce((sum, idx) => sum + (chapters[idx].tokens_approx || 0), 0);
   updateSummaryBar();
   updateContextBar();
   updateWarningBar();
+
+  // 异步精确计算 token
   recalcChapterTokens();
+
+  // update settings form
   applySettingsToForm();
 
-  // Update chat loaded indicator
-  updateStatusBar();
+  $('#chat-book-model').textContent = bookName ? '《' + bookName + '》' : '尚未加载书籍';
 
+  // 更新对话区空状态文案
   const chatEmpty = $('#chat-empty');
-  if (chatEmpty) { chatEmpty.innerHTML = ''; }
+  if (chatEmpty) {
+    chatEmpty.innerHTML = '';
+  }
 }
 
 // ======================================================================
@@ -1981,7 +1645,8 @@ async function saveSingleMessage(msgId, btn) {
 function enterSaveMode() {
   saveMode = true;
   $('#chat-messages').classList.add('save-mode');
-  updateSaveButtons('确认保存', '600');
+  $('#btn-save-toggle').textContent = '确认保存';
+  $('#btn-save-toggle').style.fontWeight = '600';
   document.querySelectorAll('.msg-sel input').forEach(cb => cb.checked = false);
   toast('勾选要保存的消息，完成后点击「确认保存」或按 Esc 退出');
 }
@@ -1989,13 +1654,9 @@ function enterSaveMode() {
 function exitSaveMode() {
   saveMode = false;
   $('#chat-messages').classList.remove('save-mode');
-  updateSaveButtons('保存到 Obsidian', '500');
+  $('#btn-save-toggle').textContent = '保存到 Obsidian';
+  $('#btn-save-toggle').style.fontWeight = '500';
   document.querySelectorAll('.msg-sel input').forEach(cb => cb.checked = false);
-}
-
-function updateSaveButtons(text, weight) {
-  const b = $('#btn-save-toggle-2');
-  if (b) { b.textContent = text; b.style.fontWeight = weight; }
 }
 
 async function confirmMultiSave() {
@@ -2077,7 +1738,6 @@ function setupSettingsPanel() {
   const slider = $('#ctx-slider');
   const number = $('#ctx-number');
   const current = $('#ctx-current');
-  if (!slider || !number || !current) return;
 
   slider.addEventListener('input', () => {
     number.value = slider.value;
@@ -2104,20 +1764,25 @@ function setupSettingsPanel() {
   });
 
   // chinese only toggle
-  const co = $('#chinese-only');
-  if (co) co.addEventListener('change', function() {
-    chineseOnly = this.checked; saveSettings(); renderReaderArea(); recalcChapterTokens();
+  $('#chinese-only').addEventListener('change', function() {
+    chineseOnly = this.checked;
+    saveSettings();
+    renderReaderArea();
+    recalcChapterTokens();
     toast(chineseOnly ? '已切换为仅中文' : '已切换为显示全文');
   });
 
-  const vp = $('#vault-path');
-  if (vp) vp.addEventListener('change', function() { vaultPath = this.value || DEFAULT_VAULT_PATH; saveSettings(); });
+  $('#vault-path').addEventListener('change', function() {
+    vaultPath = this.value || DEFAULT_VAULT_PATH;
+    saveSettings();
+  });
 
-  const sp = $('#system-prompt');
-  if (sp) sp.addEventListener('change', function() { customSystemPrompt = this.value; saveSettings(); });
+  $('#system-prompt').addEventListener('change', function() {
+    customSystemPrompt = this.value;
+    saveSettings();
+  });
 
-  const br = $('#btn-restore');
-  if (br) br.addEventListener('click', () => {
+  $('#btn-restore').addEventListener('click', () => {
     contextLimit = DEFAULT_CONTEXT_LIMIT;
     chineseOnly = true;
     vaultPath = DEFAULT_VAULT_PATH;
@@ -2132,10 +1797,14 @@ function setupSettingsPanel() {
   });
 
   // modal open/close
-  const bs = $('#btn-settings'), mc = $('#modal-close'), sm = $('#settings-modal');
-  if (bs) bs.addEventListener('click', () => { applySettingsToForm(); sm.classList.add('open'); });
-  if (mc) mc.addEventListener('click', () => sm.classList.remove('open'));
-  if (sm) sm.addEventListener('click', e => { if (e.target === sm) sm.classList.remove('open'); });
+  $('#btn-settings').addEventListener('click', () => {
+    applySettingsToForm();
+    $('#settings-modal').classList.add('open');
+  });
+  $('#modal-close').addEventListener('click', () => $('#settings-modal').classList.remove('open'));
+  $('#settings-modal').addEventListener('click', e => {
+    if (e.target === $('#settings-modal')) $('#settings-modal').classList.remove('open');
+  });
 }
 
 // ======================================================================
@@ -2242,18 +1911,32 @@ async function init() {
     handleModelChange(this.value);
   });
 
-  // 5b. Badge click handlers — chat badge group (now the only one)
-  const cbl = $('#chat-badge-local'), cbc = $('#chat-badge-cloud');
-  if (cbl) cbl.addEventListener('click', function() {
-    if (this.classList.contains('active')) return;
-    const firstLocal = select.querySelector('optgroup[label="本地 Ollama"] option');
-    if (firstLocal) { select.value = firstLocal.value; handleModelChange(firstLocal.value); }
-  });
-  if (cbc) cbc.addEventListener('click', function() {
-    if (this.classList.contains('active')) return;
-    const firstCloud = select.querySelector('optgroup[label="DeepSeek (云端)"] option');
-    if (firstCloud) { select.value = firstCloud.value; handleModelChange(firstCloud.value); }
-  });
+  // 5b. Badge click handlers — 本地/云端切换
+  const badgeLocal = $('#badge-local');
+  const badgeCloud = $('#badge-cloud');
+  if (badgeLocal && badgeCloud) {
+    badgeLocal.addEventListener('click', function() {
+      if (this.classList.contains('active')) return;
+      this.classList.add('active', 'local-active');
+      badgeCloud.classList.remove('active');
+      const firstLocal = select.querySelector('optgroup[label="本地 Ollama"] option');
+      if (firstLocal) {
+        select.value = firstLocal.value;
+        handleModelChange(firstLocal.value);
+      }
+    });
+    badgeCloud.addEventListener('click', function() {
+      if (this.classList.contains('active')) return;
+      this.classList.add('active');
+      this.classList.remove('local-active');
+      badgeLocal.classList.remove('active', 'local-active');
+      const firstCloud = select.querySelector('optgroup[label="DeepSeek (云端)"] option');
+      if (firstCloud) {
+        select.value = firstCloud.value;
+        handleModelChange(firstCloud.value);
+      }
+    });
+  }
 
   // 6. Update status bar
   updateStatusBar();
@@ -2288,150 +1971,162 @@ async function init() {
 }
 
 function setupEventListeners() {
-  try {
-  const safeOn = (sel, evt, fn) => { const el = $(sel); if (el) el.addEventListener(evt, fn); };
-
   // File upload
-  safeOn('#btn-upload', 'click', () => $('#file-input').click());
-  safeOn('#file-input', 'change', function() {
-    if (this.files && this.files[0]) { handleFileSelected(this.files[0]); this.value = ''; }
+  $('#btn-upload').addEventListener('click', () => {
+    $('#file-input').click();
+  });
+  $('#file-input').addEventListener('change', function() {
+    if (this.files && this.files[0]) {
+      handleFileSelected(this.files[0]);
+      this.value = '';
+    }
   });
 
   // Chapter search
   const searchDebounced = debounce((query) => {
     renderChapterList(query);
-    renderReaderArea();
+    // 搜索词高亮：重新渲染阅读区
+    if (selectedChapters.size > 0) renderReaderArea();
   }, 150);
-  safeOn('#chapter-search', 'input', function() { searchDebounced(this.value); });
+  $('#chapter-search').addEventListener('input', function() {
+    searchDebounced(this.value);
+  });
 
-  // Clear search
-  safeOn('#search-clear', 'click', () => {
+  // Clear search button
+  $('#search-clear').addEventListener('click', () => {
     $('#chapter-search').value = '';
     renderChapterList('');
-    renderReaderArea();
+    if (selectedChapters.size > 0) renderReaderArea();
   });
 
-  // Select all
-  safeOn('#select-all-checkbox', 'change', function() {
+  // Select all checkbox
+  $('#select-all-checkbox').addEventListener('change', function() {
     const q = ($('#chapter-search').value || '').toLowerCase();
     if (this.checked) {
-      chapters.forEach((ch, i) => { if (!q || ch.title.toLowerCase().includes(q) || (ch.text||'').toLowerCase().includes(q) || (ch.text_cn||'').toLowerCase().includes(q)) selectedChapters.add(i); });
+      chapters.forEach((ch, i) => {
+        if (!q || ch.title.toLowerCase().includes(q) || (ch.text || '').toLowerCase().includes(q) || (ch.text_cn || '').toLowerCase().includes(q)) {
+          selectedChapters.add(i);
+        }
+      });
     } else {
-      chapters.forEach((ch, i) => { if (!q || ch.title.toLowerCase().includes(q) || (ch.text||'').toLowerCase().includes(q) || (ch.text_cn||'').toLowerCase().includes(q)) selectedChapters.delete(i); });
+      chapters.forEach((ch, i) => {
+        if (!q || ch.title.toLowerCase().includes(q) || (ch.text || '').toLowerCase().includes(q) || (ch.text_cn || '').toLowerCase().includes(q)) {
+          selectedChapters.delete(i);
+        }
+      });
     }
-    renderChapterList(q); recalcChapterTokensDebounced(100);
+    renderChapterList(q);
+    recalcChapterTokensDebounced(100);
   });
 
-  // Send
-  safeOn('#btn-send', 'click', sendMessage);
+  // Send button
+  $('#btn-send').addEventListener('click', sendMessage);
 
-  // Reset
-  safeOn('#btn-reset', 'click', resetConversation);
+  // Reset button
+  $('#btn-reset').addEventListener('click', resetConversation);
 
-  // Warnings
-  safeOn('#close-warn-40k', 'click', () => { warning40kDismissed = true; const w = $('#warning-40k'); if (w) w.style.display = 'none'; });
-  safeOn('#close-warn-85', 'click', () => { warning85Dismissed = true; const w = $('#warning-85'); if (w) w.style.display = 'none'; });
-
-  // Clear history
-  safeOn('#clear-history', 'click', () => { if (confirm('确定要清空所有内容吗？（包括当前书籍和对话）')) { clearHistory(); resetBookState(); } });
-
-  // Font
-  safeOn('#font-smaller', 'click', () => adjustFont(-1));
-  safeOn('#font-larger', 'click', () => adjustFont(1));
-
-  // Reader scroll: update chapter name in header
-  safeOn('#reader-content', 'scroll', updateReaderChapterNav);
-
-  // Save button
-  const btnSave2 = $('#btn-save-toggle-2');
-  if (btnSave2) btnSave2.addEventListener('click', () => { if (!saveMode) enterSaveMode(); else confirmMultiSave(); });
-
-  // Search clear toggle
-  safeOn('#chapter-search', 'input', function() {
-    const clearBtn = $('#search-clear'); if (clearBtn) clearBtn.style.display = this.value ? 'block' : 'none';
+  // Save mode toggle
+  $('#btn-save-toggle').addEventListener('click', () => {
+    if (!saveMode) {
+      enterSaveMode();
+    } else {
+      confirmMultiSave();
+    }
   });
 
-  // Settings
+  // Warning bar close buttons
+  $('#close-warn-40k').addEventListener('click', () => {
+    warning40kDismissed = true;
+    $('#warning-40k').style.display = 'none';
+  });
+  $('#close-warn-85').addEventListener('click', () => {
+    warning85Dismissed = true;
+    $('#warning-85').style.display = 'none';
+  });
+
+  // Clear history + reset current book
+  $('#clear-history').addEventListener('click', () => {
+    if (confirm('确定要清空所有内容吗？（包括当前书籍和对话）')) {
+      clearHistory();
+      resetBookState();
+    }
+  });
+
+  // Font controls
+  $('#font-smaller').addEventListener('click', () => adjustFont(-1));
+  $('#font-larger').addEventListener('click', () => adjustFont(1));
+
+  // Settings panel
   setupSettingsPanel();
 
-  // Confirm dialog
-  safeOn('#confirm-dialog', 'click', e => { if (e.target === $('#confirm-dialog')) $('#confirm-dialog').classList.remove('open'); });
-
-  // Keyboard shortcuts
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      const cd = $('#confirm-dialog'), sm = $('#settings-modal');
-      if (cd && cd.classList.contains('open')) cd.classList.remove('open');
-      else if (sm && sm.classList.contains('open')) sm.classList.remove('open');
-      else if (saveMode) { exitSaveMode(); toast('已退出保存模式'); }
-      return;
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === '=') { e.preventDefault(); adjustFont(1); }
-    if ((e.ctrlKey || e.metaKey) && e.key === '-') { e.preventDefault(); adjustFont(-1); }
+  // Confirm dialog close
+  $('#confirm-dialog').addEventListener('click', e => {
+    if (e.target === $('#confirm-dialog')) $('#confirm-dialog').classList.remove('open');
   });
 
-  // Click outside → exit save mode
+  // Global keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    // Escape: close modals / exit save mode
+    if (e.key === 'Escape') {
+      if ($('#confirm-dialog').classList.contains('open')) {
+        $('#confirm-dialog').classList.remove('open');
+      } else if ($('#settings-modal').classList.contains('open')) {
+        $('#settings-modal').classList.remove('open');
+      } else if (saveMode) {
+        exitSaveMode();
+        toast('已退出保存模式');
+      }
+      return;
+    }
+
+    // Ctrl/Cmd + =: font larger
+    if ((e.ctrlKey || e.metaKey) && e.key === '=') {
+      e.preventDefault();
+      adjustFont(1);
+    }
+
+    // Ctrl/Cmd + -: font smaller
+    if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+      e.preventDefault();
+      adjustFont(-1);
+    }
+  });
+
+  // Click outside → exit save mode (点击保存按钮/消息复选框以外的地方自动退出)
   document.addEventListener('click', function(e) {
     if (!saveMode) return;
-    const t = e.target;
-    if (t.closest('#btn-save-toggle-2') || t.closest('.msg-sel') || t.closest('.msg-row') || t.closest('.modal-overlay') || t.closest('#toast-container')) return;
+    const target = e.target;
+    // 点击保存按钮本身 → 不退出（由 btn-save-toggle handler 处理）
+    if (target.closest('#btn-save-toggle')) return;
+    // 点击消息复选框或消息行 → 不退出
+    if (target.closest('.msg-sel') || target.closest('.msg-row')) return;
+    // 点击 modal/toast → 不退出
+    if (target.closest('.modal-overlay') || target.closest('#toast-container')) return;
+    // 其他地方 → 退出
     exitSaveMode();
   });
 
   // Textarea auto-resize
-  safeOn('#chat-input', 'input', function() { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 200) + 'px'; });
+  $('#chat-input').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+  });
 
-  // Enter to send
-  safeOn('#chat-input', 'keydown', function(e) {
+  // Enter 发送 / Shift+Enter 换行（IME 组合输入时不触发）
+  $('#chat-input').addEventListener('keydown', function(e) {
     if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
       const val = this.value.trim();
-      if (val && !isStreaming) { e.preventDefault(); sendMessage(); }
+      // 有内容且不在流式输出中才发送，否则保留换行
+      if (val && !isStreaming && selectedChapters.size > 0) {
+        e.preventDefault();
+        sendMessage();
+      }
+      // 空输入或无章节时，Enter 正常换行
     }
   });
-  } catch(err) { console.error('setupEventListeners error:', err); }
 }
 
 // Font size management
-function scrollToChapter(idx) {
-  const container = $('#reader-content');
-  const target = container.querySelector('[data-chapter-idx="' + idx + '"]');
-  if (target) {
-    container.scrollTop = target.offsetTop - container.offsetTop - 10;
-    updateReaderChapterNav();
-  }
-}
-
-function updateReaderChapterNav() {
-  const navEl = $('#reader-chapter-nav');
-  const container = $('#reader-content');
-  const sections = container.querySelectorAll('.reader-chapter-section');
-  if (sections.length === 0) { navEl.textContent = ''; return; }
-
-  const scrollTop = container.scrollTop;
-  let currentIdx = -1;
-  sections.forEach(section => {
-    if (section.offsetTop - container.offsetTop <= scrollTop + 10) {
-      currentIdx = parseInt(section.dataset.chapterIdx);
-    }
-  });
-
-  if (currentIdx >= 0 && chapters[currentIdx]) {
-    if (navEl) navEl.textContent = chapters[currentIdx].title;
-  } else if (sections.length > 0 && navEl) {
-    const firstIdx = parseInt(sections[0].dataset.chapterIdx);
-    if (chapters[firstIdx]) navEl.textContent = chapters[firstIdx].title;
-  }
-
-  // Sync sidebar chapter list highlight
-  const list = $('#chapter-list');
-  if (!list) return;
-  list.querySelectorAll('.chapter-item.viewing').forEach(item => item.classList.remove('viewing'));
-  if (currentIdx >= 0) {
-    const activeItem = list.querySelector('.chapter-item[data-idx="' + currentIdx + '"]');
-    if (activeItem) activeItem.classList.add('viewing');
-  }
-}
-
 function applyFontSize(size) {
   globalFontSize = size;
   localStorage.setItem('readerFontSize', size);
@@ -2445,12 +2140,7 @@ function adjustFont(delta) {
 // ======================================================================
 // STARTUP
 // ======================================================================
-document.addEventListener('DOMContentLoaded', () => {
-  init().catch(err => {
-    console.error('初始化失败:', err);
-    document.body.innerHTML += '<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;padding:20px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.15);z-index:9999;font-size:14px;color:#ef4444">初始化错误: ' + err.message + '<br><small>请刷新页面或检查控制台</small></div>';
-  });
-});
+document.addEventListener('DOMContentLoaded', init);
 </script>
 
 </body>

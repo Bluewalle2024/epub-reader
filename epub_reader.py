@@ -364,6 +364,51 @@ def _extract_from_headings(spine_items: list) -> list[dict]:
 
 # ── 2.6 EPUB 解析（同步，运行在线程池中）──
 
+import base64 as b64_mod
+
+def _extract_cover_image(book) -> str | None:
+    """从 EPUB 中提取封面图片，返回 base64 data URL，无封面返回 None。"""
+    try:
+        # 方法1: 通过 OPF metadata 找 cover id
+        cover_id = None
+        metas = book.get_metadata('OPF', 'cover')
+        if metas:
+            cover_id = metas[0][0]
+
+        # 方法2: 遍历 items 找名称含 'cover' 的图片
+        if not cover_id:
+            for item in book.get_items():
+                name = (item.get_name() or '').lower()
+                if 'cover' in name and item.media_type and item.media_type.startswith('image/'):
+                    cover_id = item.id
+                    break
+
+        # 方法3: 找第一个大尺寸图片
+        if not cover_id:
+            for item in book.get_items():
+                if item.media_type and item.media_type.startswith('image/'):
+                    try:
+                        from PIL import Image as PILImage
+                        img = PILImage.open(io.BytesIO(item.get_content()))
+                        w, h = img.size
+                        if w > 100 and h > 100:  # 排除小图标
+                            cover_id = item.id
+                            break
+                    except Exception:
+                        continue
+
+        if cover_id:
+            item = book.get_item_with_id(cover_id)
+            if item and item.media_type and item.media_type.startswith('image/'):
+                img_data = item.get_content()
+                mime = item.media_type or 'image/jpeg'
+                b64 = b64_mod.b64encode(img_data).decode('ascii')
+                return f'data:{mime};base64,{b64}'
+    except Exception:
+        pass
+    return None
+
+
 def _parse_epub_sync(file_data: bytes, filename: str = "") -> dict:
     """
     四级降级策略，每一级失败自动进入下一级:
@@ -383,10 +428,12 @@ def _parse_epub_sync(file_data: bytes, filename: str = "") -> dict:
 
         if len(chapters) > 0 and sum(len(ch.get('text', '')) for ch in chapters) > 500:
             name = extract_book_name(book, filename)
+            cover = _extract_cover_image(book)
             return {
                 "name": name,
                 "chapters": chapters,
-                "repair_level": 0
+                "repair_level": 0,
+                "cover": cover
             }
     except Exception as e:
         logging.warning(f"Level 0 解析失败: {e}")
